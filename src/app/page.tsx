@@ -243,7 +243,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="relative z-10 text-center py-8 text-green-500 border-t border-green-200/50">
-        {/* Updated footer with authentication features - Test deployment fix */}
+        {/* Updated footer with authentication features - Auto-deployment test */}
         <p>&copy; 2025 CertBloom. Built with 💚 for Texas teachers.</p>
         <div className="mt-2">
           <a href="mailto:support@certbloom.com" className="hover:text-green-700 transition-colors">
