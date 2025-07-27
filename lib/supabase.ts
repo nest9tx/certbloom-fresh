@@ -1,11 +1,19 @@
 import { createClient } from '@supabase/supabase-js'
 
 // These will be environment variables in production
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-// Create the client - this should work if env vars are properly set
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Validate environment variables
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn('Supabase environment variables are missing')
+}
+
+// Create the client with fallback values for build time
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co', 
+  supabaseAnonKey || 'placeholder-key'
+)
 
 // Types for our application
 export interface UserProfile {
@@ -35,6 +43,10 @@ export interface StudySession {
 // Authentication Functions
 export async function signUp(email: string, password: string, fullName: string) {
   try {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return { success: false, error: 'Supabase configuration is missing' }
+    }
+    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -58,6 +70,10 @@ export async function signUp(email: string, password: string, fullName: string) 
 
 export async function signIn(email: string, password: string) {
   try {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return { success: false, error: 'Supabase configuration is missing' }
+    }
+    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -76,6 +92,10 @@ export async function signIn(email: string, password: string) {
 
 export async function signOut() {
   try {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return { success: false, error: 'Supabase configuration is missing' }
+    }
+    
     const { error } = await supabase.auth.signOut()
     if (error) {
       return { success: false, error: error.message }
@@ -89,6 +109,10 @@ export async function signOut() {
 
 export async function getCurrentUser() {
   try {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return { success: false, error: 'Supabase configuration is missing' }
+    }
+    
     const { data: { user }, error } = await supabase.auth.getUser()
     if (error) {
       return { success: false, error: error.message }

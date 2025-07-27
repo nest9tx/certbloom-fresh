@@ -13,9 +13,9 @@ export default function DashboardPage() {
   const [currentMood, setCurrentMood] = useState<string>('');
   const [showBreathing, setShowBreathing] = useState(false);
   const [breathingCount, setBreathingCount] = useState(0);
-  const [studyStreak, setStudyStreak] = useState(3);
-  const [weeklyGoal, setWeeklyGoal] = useState(75);
-  const [currentProgress, setCurrentProgress] = useState(42);
+  const [studyStreak] = useState(3);
+  const [weeklyGoal] = useState(75);
+  const [currentProgress] = useState(42);
 
   const moodOptions = [
     { emoji: '😊', label: 'Energized', value: 'energized' },
