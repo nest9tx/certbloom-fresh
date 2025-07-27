@@ -195,7 +195,7 @@ export default function PricingPage() {
             
             <div className="text-center mt-4">
               <p className="text-green-400 text-xs">
-                ✓ 7-day free trial on both plans • Cancel anytime
+                ✓ Start free, upgrade anytime • Cancel anytime
               </p>
               <p className="text-green-500 text-xs mt-1">
                 📧 Email support@certbloom.com for billing assistance
@@ -230,6 +230,15 @@ export default function PricingPage() {
           </h2>
           
           <div className="space-y-8">
+            <div className="bg-white/80 rounded-xl p-6">
+              <h3 className="text-lg font-medium text-green-800 mb-3">
+                Can I try before I buy?
+              </h3>
+              <p className="text-green-600">
+                Absolutely! Start with our generous free plan (50 practice questions, basic study materials, mindfulness tools) to experience CertBloom. When you&apos;re ready for unlimited questions and advanced features, upgrade to Pro anytime.
+              </p>
+            </div>
+            
             <div className="bg-white/80 rounded-xl p-6">
               <h3 className="text-lg font-medium text-green-800 mb-3">
                 Can I upgrade or cancel anytime?

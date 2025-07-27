@@ -271,7 +271,7 @@ export default function PracticeSessionPage() {
                 <span className="text-green-600 text-sm">{currentQ.topic}</span>
               </div>
               
-              <h2 className="text-xl text-green-800 leading-relaxed">
+              <h2 className="text-xl text-gray-800 font-medium leading-relaxed">
                 {currentQ.content}
               </h2>
             </div>
@@ -293,7 +293,7 @@ export default function PracticeSessionPage() {
                   if (index === selectedAnswer) {
                     buttonClass += "border-green-500 bg-green-50 text-green-800 transform scale-[1.02]";
                   } else {
-                    buttonClass += "border-green-200/60 hover:border-green-400 hover:bg-green-50";
+                    buttonClass += "border-green-200/60 hover:border-green-400 hover:bg-green-50 text-gray-800 hover:text-green-800";
                   }
                 }
 
