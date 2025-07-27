@@ -86,8 +86,8 @@ export default function HomePage() {
           <div className="hidden md:flex items-center space-x-8">
             <a href="#features" className="text-green-700 hover:text-green-900 transition-colors font-medium">Features</a>
             <Link href="/pricing" className="text-green-700 hover:text-green-900 transition-colors font-medium">Pricing</Link>
-            <a href="#about" className="text-green-700 hover:text-green-900 transition-colors font-medium">About</a>
-            <a href="#contact" className="text-green-700 hover:text-green-900 transition-colors font-medium">Contact</a>
+            <Link href="/about" className="text-green-700 hover:text-green-900 transition-colors font-medium">About</Link>
+            <Link href="/contact" className="text-green-700 hover:text-green-900 transition-colors font-medium">Contact</Link>
             {user ? (
               <>
                 <Link href="/dashboard" className="text-green-700 hover:text-green-900 transition-colors font-medium">
@@ -192,19 +192,19 @@ export default function HomePage() {
               </div>
 
               {/* Floating Stats */}
-              <div className="absolute top-12 -left-8 bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-xl border border-green-200/60 transform rotate-3 hover:rotate-0 transition-transform duration-300">
-                <div className="text-3xl font-bold text-green-700">94%</div>
-                <div className="text-sm text-green-600 font-medium">Pass Rate</div>
+              <div className="absolute top-8 -left-12 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-xl border border-green-200/60 transform rotate-3 hover:rotate-0 transition-transform duration-300">
+                <div className="text-2xl font-bold text-green-700">94%</div>
+                <div className="text-xs text-green-600 font-medium">Pass Rate</div>
               </div>
 
-              <div className="absolute bottom-12 -right-8 bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-xl border border-orange-200/60 transform -rotate-3 hover:rotate-0 transition-transform duration-300">
-                <div className="text-3xl font-bold text-orange-600">15min</div>
-                <div className="text-sm text-orange-500 font-medium">Daily Study</div>
+              <div className="absolute bottom-8 -right-12 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-xl border border-orange-200/60 transform -rotate-3 hover:rotate-0 transition-transform duration-300">
+                <div className="text-2xl font-bold text-orange-600">15min</div>
+                <div className="text-xs text-orange-500 font-medium">Daily Study</div>
               </div>
 
-              <div className="absolute top-1/2 -right-12 bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-xl border border-yellow-200/60 transform rotate-6 hover:rotate-0 transition-transform duration-300">
-                <div className="text-3xl font-bold text-yellow-600">TX</div>
-                <div className="text-sm text-yellow-500 font-medium">Focused</div>
+              <div className="absolute top-1/2 left-8 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-xl border border-yellow-200/60 transform rotate-6 hover:rotate-0 transition-transform duration-300">
+                <div className="text-2xl font-bold text-yellow-600">TX</div>
+                <div className="text-xs text-yellow-500 font-medium">Focused</div>
               </div>
             </div>
           </div>
@@ -380,7 +380,7 @@ export default function HomePage() {
                 <Link href="/pricing" className="block text-green-200 hover:text-white transition-colors">Pricing</Link>
                 <Link href="/auth" className="block text-green-200 hover:text-white transition-colors">Sign In</Link>
                 <a href="#features" className="block text-green-200 hover:text-white transition-colors">Features</a>
-                <a href="#about" className="block text-green-200 hover:text-white transition-colors">About</a>
+                <Link href="/about" className="block text-green-200 hover:text-white transition-colors">About</Link>
               </div>
             </div>
 
