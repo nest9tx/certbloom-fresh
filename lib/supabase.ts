@@ -1,19 +1,40 @@
 import { createClient } from '@supabase/supabase-js'
 
-// These will be environment variables in production
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-// Validate environment variables
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase environment variables are missing')
+// Function to validate URL format
+function isValidUrl(string: string): boolean {
+  try {
+    new URL(string);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
-// Create the client with fallback values for build time
-export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co', 
-  supabaseAnonKey || 'placeholder-key'
-)
+// Get environment variables with validation
+const rawSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const rawSupabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+// Validate and sanitize environment variables
+const supabaseUrl = rawSupabaseUrl && isValidUrl(rawSupabaseUrl) 
+  ? rawSupabaseUrl 
+  : 'https://placeholder.supabase.co'
+
+const supabaseAnonKey = rawSupabaseAnonKey && rawSupabaseAnonKey.length > 10 
+  ? rawSupabaseAnonKey 
+  : 'placeholder-key-placeholder-key-placeholder-key'
+
+// Log warnings for invalid configuration (only in development)
+if (process.env.NODE_ENV === 'development') {
+  if (!rawSupabaseUrl || !isValidUrl(rawSupabaseUrl)) {
+    console.warn('NEXT_PUBLIC_SUPABASE_URL is missing or invalid:', rawSupabaseUrl)
+  }
+  if (!rawSupabaseAnonKey || rawSupabaseAnonKey.length <= 10) {
+    console.warn('NEXT_PUBLIC_SUPABASE_ANON_KEY is missing or invalid')
+  }
+}
+
+// Create the client with validated values
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Types for our application
 export interface UserProfile {
@@ -43,8 +64,9 @@ export interface StudySession {
 // Authentication Functions
 export async function signUp(email: string, password: string, fullName: string) {
   try {
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return { success: false, error: 'Supabase configuration is missing' }
+    // Check if we have valid Supabase configuration
+    if (!rawSupabaseUrl || !isValidUrl(rawSupabaseUrl) || !rawSupabaseAnonKey) {
+      return { success: false, error: 'Supabase configuration is missing or invalid. Please contact support.' }
     }
     
     const { data, error } = await supabase.auth.signUp({
@@ -70,8 +92,9 @@ export async function signUp(email: string, password: string, fullName: string) 
 
 export async function signIn(email: string, password: string) {
   try {
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return { success: false, error: 'Supabase configuration is missing' }
+    // Check if we have valid Supabase configuration
+    if (!rawSupabaseUrl || !isValidUrl(rawSupabaseUrl) || !rawSupabaseAnonKey) {
+      return { success: false, error: 'Supabase configuration is missing or invalid. Please contact support.' }
     }
     
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -92,8 +115,9 @@ export async function signIn(email: string, password: string) {
 
 export async function signOut() {
   try {
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return { success: false, error: 'Supabase configuration is missing' }
+    // Check if we have valid Supabase configuration
+    if (!rawSupabaseUrl || !isValidUrl(rawSupabaseUrl) || !rawSupabaseAnonKey) {
+      return { success: false, error: 'Supabase configuration is missing or invalid. Please contact support.' }
     }
     
     const { error } = await supabase.auth.signOut()
@@ -109,8 +133,9 @@ export async function signOut() {
 
 export async function getCurrentUser() {
   try {
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return { success: false, error: 'Supabase configuration is missing' }
+    // Check if we have valid Supabase configuration
+    if (!rawSupabaseUrl || !isValidUrl(rawSupabaseUrl) || !rawSupabaseAnonKey) {
+      return { success: false, error: 'Supabase configuration is missing or invalid. Please contact support.' }
     }
     
     const { data: { user }, error } = await supabase.auth.getUser()
