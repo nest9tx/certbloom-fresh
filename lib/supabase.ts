@@ -1,13 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 
 // These will be environment variables in production
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
-// Only create client if we have the required environment variables and they're valid URLs
-export const supabase = supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('https://') 
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null
+// Create the client - this should work if env vars are properly set
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Types for our application
 export interface UserProfile {
@@ -37,10 +35,6 @@ export interface StudySession {
 // Authentication Functions
 export async function signUp(email: string, password: string, fullName: string) {
   try {
-    if (!supabase) {
-      return { success: false, error: 'Supabase configuration is missing' }
-    }
-
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -64,10 +58,6 @@ export async function signUp(email: string, password: string, fullName: string) 
 
 export async function signIn(email: string, password: string) {
   try {
-    if (!supabase) {
-      return { success: false, error: 'Supabase configuration is missing' }
-    }
-
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -86,10 +76,6 @@ export async function signIn(email: string, password: string) {
 
 export async function signOut() {
   try {
-    if (!supabase) {
-      return { success: false, error: 'Supabase configuration is missing' }
-    }
-    
     const { error } = await supabase.auth.signOut()
     if (error) {
       return { success: false, error: error.message }
@@ -103,10 +89,6 @@ export async function signOut() {
 
 export async function getCurrentUser() {
   try {
-    if (!supabase) {
-      return { success: false, error: 'Supabase configuration is missing' }
-    }
-    
     const { data: { user }, error } = await supabase.auth.getUser()
     if (error) {
       return { success: false, error: error.message }
@@ -121,10 +103,6 @@ export async function getCurrentUser() {
 // Profile Functions
 export async function createUserProfile(userId: string, profileData: Partial<UserProfile>) {
   try {
-    if (!supabase) {
-      return { success: false, error: 'Supabase configuration is missing' }
-    }
-    
     const { data, error } = await supabase
       .from('user_profiles')
       .insert([
@@ -150,10 +128,6 @@ export async function createUserProfile(userId: string, profileData: Partial<Use
 
 export async function getUserProfile(userId: string) {
   try {
-    if (!supabase) {
-      return { success: false, error: 'Supabase configuration is missing' }
-    }
-    
     const { data, error } = await supabase
       .from('user_profiles')
       .select('*')
@@ -173,10 +147,6 @@ export async function getUserProfile(userId: string) {
 
 export async function updateUserProfile(userId: string, updates: Partial<UserProfile>) {
   try {
-    if (!supabase) {
-      return { success: false, error: 'Supabase configuration is missing' }
-    }
-    
     const { data, error } = await supabase
       .from('user_profiles')
       .update({
@@ -200,10 +170,6 @@ export async function updateUserProfile(userId: string, updates: Partial<UserPro
 // Study Session Functions
 export async function createStudySession(sessionData: Omit<StudySession, 'id' | 'created_at'>) {
   try {
-    if (!supabase) {
-      return { success: false, error: 'Supabase configuration is missing' }
-    }
-    
     const { data, error } = await supabase
       .from('study_sessions')
       .insert([
@@ -227,10 +193,6 @@ export async function createStudySession(sessionData: Omit<StudySession, 'id' | 
 
 export async function getUserStudySessions(userId: string, limit = 10) {
   try {
-    if (!supabase) {
-      return { success: false, error: 'Supabase configuration is missing' }
-    }
-    
     const { data, error } = await supabase
       .from('study_sessions')
       .select('*')
@@ -252,9 +214,6 @@ export async function getUserStudySessions(userId: string, limit = 10) {
 // Email signup function (keeping your existing one)
 export async function signupForEarlyAccess(email: string) {
   try {
-    if (!supabase) {
-      return { success: false, error: 'Supabase configuration is missing' }
-    }
     
     const { data, error } = await supabase
       .from('early_access_signups')
