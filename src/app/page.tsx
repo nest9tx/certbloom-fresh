@@ -197,7 +197,7 @@ export default function HomePage() {
                 <div className="text-xs text-green-600 font-medium">Pass Rate</div>
               </div>
 
-              <div className="absolute bottom-8 -right-12 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-xl border border-orange-200/60 transform -rotate-3 hover:rotate-0 transition-transform duration-300">
+              <div className="absolute bottom-8 -right-32 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-xl border border-orange-200/60 transform -rotate-3 hover:rotate-0 transition-transform duration-300">
                 <div className="text-2xl font-bold text-orange-600">15min</div>
                 <div className="text-xs text-orange-500 font-medium">Daily Study</div>
               </div>
