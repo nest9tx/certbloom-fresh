@@ -392,8 +392,8 @@ export default function HomePage() {
                   support@certbloom.com
                 </a>
                 <Link href="/contact" className="block text-green-200 hover:text-white transition-colors">Help Center</Link>
-                <span className="block text-green-300 text-sm opacity-75">Privacy Policy (Coming Soon)</span>
-                <span className="block text-green-300 text-sm opacity-75">Terms of Service (Coming Soon)</span>
+                <Link href="/privacy" className="block text-green-200 hover:text-white text-sm transition-colors">Privacy Policy</Link>
+                <Link href="/terms" className="block text-green-200 hover:text-white text-sm transition-colors">Terms of Service</Link>
               </div>
             </div>
           </div>
