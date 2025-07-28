@@ -161,7 +161,7 @@ export default function HomePage() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-green-500 text-lg">✓</span>
-                  <span>7-day free trial</span>
+                  <span>Start free today</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-green-500 text-lg">✓</span>
@@ -310,7 +310,7 @@ export default function HomePage() {
               </div>
               
               <p className="text-green-500 text-sm mb-8">
-                Free plan includes 50 practice questions • 7-day free trial on paid plans • No credit card required
+                Free plan includes 50 practice questions • Start free, upgrade anytime • No credit card required
               </p>
               
               {/* Email signup for non-Texas teachers */}
@@ -391,9 +391,9 @@ export default function HomePage() {
                 <a href="mailto:support@certbloom.com" className="block text-green-200 hover:text-white transition-colors">
                   support@certbloom.com
                 </a>
-                <a href="#" className="block text-green-200 hover:text-white transition-colors">Help Center</a>
-                <a href="#" className="block text-green-200 hover:text-white transition-colors">Privacy Policy</a>
-                <a href="#" className="block text-green-200 hover:text-white transition-colors">Terms of Service</a>
+                <Link href="/contact" className="block text-green-200 hover:text-white transition-colors">Help Center</Link>
+                <span className="block text-green-300 text-sm opacity-75">Privacy Policy (Coming Soon)</span>
+                <span className="block text-green-300 text-sm opacity-75">Terms of Service (Coming Soon)</span>
               </div>
             </div>
           </div>
@@ -406,18 +406,18 @@ export default function HomePage() {
             <div className="flex items-center space-x-4 mt-4 md:mt-0">
               <span className="text-green-200 text-sm">Follow our journey:</span>
               <div className="flex space-x-3">
-                <a href="#" className="text-green-200 hover:text-white transition-colors">
-                  <span className="sr-only">Twitter</span>
+                <span className="text-green-300 opacity-75 cursor-not-allowed" title="Coming Soon">
+                  <span className="sr-only">Twitter (Coming Soon)</span>
                   🐦
-                </a>
-                <a href="#" className="text-green-200 hover:text-white transition-colors">
-                  <span className="sr-only">LinkedIn</span>
+                </span>
+                <span className="text-green-300 opacity-75 cursor-not-allowed" title="Coming Soon">
+                  <span className="sr-only">LinkedIn (Coming Soon)</span>
                   💼
-                </a>
-                <a href="#" className="text-green-200 hover:text-white transition-colors">
-                  <span className="sr-only">Instagram</span>
+                </span>
+                <span className="text-green-300 opacity-75 cursor-not-allowed" title="Coming Soon">
+                  <span className="sr-only">Instagram (Coming Soon)</span>
                   📸
-                </a>
+                </span>
               </div>
             </div>
           </div>
