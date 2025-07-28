@@ -20,7 +20,7 @@ function AuthPageContent() {
 
   // Check for error messages in URL parameters
   useEffect(() => {
-    const errorParam = searchParams.get('error');
+    const errorParam = searchParams?.get('error');
     if (errorParam) {
       switch (errorParam) {
         case 'confirmation_failed':
