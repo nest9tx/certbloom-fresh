@@ -16,6 +16,20 @@ export default function DashboardPage() {
   const [studyStreak] = useState(3);
   const [weeklyGoal] = useState(75);
   const [currentProgress] = useState(42);
+  // Subscription status (mocked for now, replace with Supabase query)
+  const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'canceled' | 'free'>('free');
+
+  // Fetch subscription status from Supabase
+  useEffect(() => {
+    async function fetchStatus() {
+      if (user) {
+        const { getSubscriptionStatus } = await import('../../lib/getSubscriptionStatus');
+        const status = await getSubscriptionStatus(user.id);
+        setSubscriptionStatus(status);
+      }
+    }
+    fetchStatus();
+  }, [user]);
 
   const moodOptions = [
     { emoji: '😊', label: 'Energized', value: 'energized' },
@@ -90,6 +104,18 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <div className="relative z-10 container mx-auto px-6 py-8">
+        {/* Subscription Badge/Button */}
+        <div className="flex justify-end mb-4">
+          {subscriptionStatus === 'active' ? (
+            <span className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-full text-sm font-semibold shadow-lg">
+              <span className="mr-2">🌟</span> Upgraded: Full Access
+            </span>
+          ) : (
+            <Link href="/pricing" className="inline-flex items-center px-4 py-2 bg-yellow-400 text-green-900 rounded-full text-sm font-semibold shadow-lg hover:bg-yellow-500 transition-colors">
+              <span className="mr-2">🔒</span> Upgrade for Full Access
+            </Link>
+          )}
+        </div>
         <div className="max-w-7xl mx-auto">
           
           {/* Personalized Welcome & Mood Check */}
