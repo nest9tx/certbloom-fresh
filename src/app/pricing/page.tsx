@@ -2,9 +2,43 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function PricingPage() {
-  return (
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  async function handleCheckout(plan: 'monthly' | 'yearly') {
+    setLoading(true);
+    try {
+      // Get JWT from localStorage or Supabase client (adjust as needed)
+      const token = localStorage.getItem('sb-access-token');
+      if (!token) {
+        alert('Please sign in first.');
+        router.push('/auth');
+        return;
+      }
+      const res = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ plan }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert('Error creating checkout session.');
+      }
+    } catch {
+      alert('Checkout error.');
+    } finally {
+      setLoading(false);
+    }
+  }
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50">
       {/* Navigation */}
       <nav className="relative z-10 bg-white/80 backdrop-blur-md border-b border-green-200/50">
@@ -153,14 +187,13 @@ export default function PricingPage() {
                   <span className="font-medium text-green-800">Monthly Plan</span>
                   <span className="text-green-600 font-bold">$25/month</span>
                 </div>
-                <a 
-                  href="https://buy.stripe.com/test_bJe7sM8M296I4YtbNqfnO00"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full block text-center py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                <button
+                  disabled={loading}
+                  onClick={() => handleCheckout('monthly')}
+                  className="w-full block text-center py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-60"
                 >
-                  Start Monthly Plan
-                </a>
+                  {loading ? 'Redirecting...' : 'Start Monthly Plan'}
+                </button>
               </div>
 
               {/* Yearly Plan - Highlighted */}
@@ -182,14 +215,13 @@ export default function PricingPage() {
                     Save $201 (67% off!)
                   </span>
                 </div>
-                <a 
-                  href="https://buy.stripe.com/test_eVqbJ21jAaaM0IddVyfnO01"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full block text-center py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-colors font-medium shadow-lg"
+                <button
+                  disabled={loading}
+                  onClick={() => handleCheckout('yearly')}
+                  className="w-full block text-center py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-colors font-medium shadow-lg disabled:opacity-60"
                 >
-                  Get Yearly Plan - Save $201!
-                </a>
+                  {loading ? 'Redirecting...' : 'Get Yearly Plan - Save $201!'}
+                </button>
               </div>
             </div>
             
@@ -296,5 +328,4 @@ export default function PricingPage() {
         </div>
       </footer>
     </div>
-  );
 }
