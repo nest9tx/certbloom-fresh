@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
+import { useAuth } from '../../../lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 
@@ -10,6 +11,7 @@ import { createClient } from '@supabase/supabase-js';
 export default function PricingPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { user, loading: authLoading, signOut } = useAuth();
 
   async function handleCheckout(plan: 'monthly' | 'yearly') {
     setLoading(true);
@@ -63,9 +65,21 @@ export default function PricingPage() {
             <Link href="/pricing" className="text-green-900 font-semibold">Pricing</Link>
             <Link href="/about" className="text-green-700 hover:text-green-900 transition-colors font-medium">About</Link>
             <Link href="/contact" className="text-green-700 hover:text-green-900 transition-colors font-medium">Contact</Link>
-            <Link href="/auth" className="px-6 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
-              Sign In
-            </Link>
+            {authLoading ? null : user ? (
+              <>
+                <span className="text-green-700 font-medium mr-4">Welcome, {user.user_metadata?.full_name || user.email}</span>
+                <button
+                  onClick={async () => { await signOut(); router.push('/auth'); }}
+                  className="px-6 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <Link href="/auth" className="px-6 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
+                Sign In
+              </Link>
+            )}
           </div>
         </div>
       </nav>
