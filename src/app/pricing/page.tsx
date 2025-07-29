@@ -39,6 +39,8 @@ export default function PricingPage() {
       setLoading(false);
     }
   }
+
+  return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50">
       {/* Navigation */}
       <nav className="relative z-10 bg-white/80 backdrop-blur-md border-b border-green-200/50">
@@ -88,7 +90,6 @@ export default function PricingPage() {
       {/* Pricing Cards */}
       <section className="px-6 pb-16">
         <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
-          
           {/* Free Plan */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-green-200/50 shadow-lg">
             <div className="text-center mb-8">
@@ -96,7 +97,6 @@ export default function PricingPage() {
               <div className="text-4xl font-light text-green-600 mb-4">$0</div>
               <p className="text-green-500">Perfect for getting started</p>
             </div>
-            
             <ul className="space-y-4 mb-8">
               <li className="flex items-center">
                 <span className="text-green-500 mr-3">✓</span>
@@ -119,7 +119,6 @@ export default function PricingPage() {
                 <span className="text-gray-700">Progress tracking</span>
               </li>
             </ul>
-            
             <Link 
               href="/auth"
               className="w-full block text-center py-3 border-2 border-green-600 text-green-600 rounded-xl hover:bg-green-50 transition-colors"
@@ -127,7 +126,6 @@ export default function PricingPage() {
               Get Started Free
             </Link>
           </div>
-
           {/* Pro Plan */}
           <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 border-2 border-green-400 shadow-xl relative">
             <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
@@ -144,7 +142,6 @@ export default function PricingPage() {
               <div className="text-sm text-green-500 mb-4">or $99/year (save $201)</div>
               <p className="text-green-500">Complete certification prep</p>
             </div>
-            
             <ul className="space-y-4 mb-8">
               <li className="flex items-center">
                 <span className="text-green-500 mr-3">✓</span>
@@ -179,7 +176,6 @@ export default function PricingPage() {
                 <span className="text-gray-700 font-medium">Pass Guarantee*</span>
               </li>
             </ul>
-            
             <div className="space-y-4">
               {/* Monthly Plan */}
               <div className="border border-green-300 rounded-xl p-4">
@@ -195,7 +191,6 @@ export default function PricingPage() {
                   {loading ? 'Redirecting...' : 'Start Monthly Plan'}
                 </button>
               </div>
-
               {/* Yearly Plan - Highlighted */}
               <div className="border-2 border-yellow-400 rounded-xl p-4 bg-gradient-to-r from-yellow-50 to-orange-50 relative">
                 <div className="absolute -top-2 right-4">
@@ -224,7 +219,6 @@ export default function PricingPage() {
                 </button>
               </div>
             </div>
-            
             <div className="text-center mt-4">
               <p className="text-green-400 text-xs">
                 ✓ Start free, upgrade anytime • Cancel anytime
@@ -235,7 +229,6 @@ export default function PricingPage() {
             </div>
           </div>
         </div>
-
         {/* Pass Guarantee Section */}
         <div className="max-w-4xl mx-auto mt-12">
           <div className="bg-gradient-to-r from-green-100 to-orange-100 rounded-2xl p-8 border border-green-200/50">
@@ -253,14 +246,12 @@ export default function PricingPage() {
           </div>
         </div>
       </section>
-
       {/* FAQ Section */}
       <section className="px-6 py-16 bg-white/30">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl font-light text-green-800 text-center mb-12">
             Frequently Asked Questions
           </h2>
-          
           <div className="space-y-8">
             <div className="bg-white/80 rounded-xl p-6">
               <h3 className="text-lg font-medium text-green-800 mb-3">
@@ -270,7 +261,6 @@ export default function PricingPage() {
                 Absolutely! Start with our generous free plan (50 practice questions, basic study materials, mindfulness tools) to experience CertBloom. When you&apos;re ready for unlimited questions and advanced features, upgrade to Pro anytime.
               </p>
             </div>
-            
             <div className="bg-white/80 rounded-xl p-6">
               <h3 className="text-lg font-medium text-green-800 mb-3">
                 Can I upgrade or cancel anytime?
@@ -279,7 +269,6 @@ export default function PricingPage() {
                 Yes! You can upgrade from Free to Pro or cancel your subscription at any time. No long-term commitments or cancellation fees.
               </p>
             </div>
-            
             <div className="bg-white/80 rounded-xl p-6">
               <h3 className="text-lg font-medium text-green-800 mb-3">
                 What TExES certifications do you support?
@@ -288,7 +277,6 @@ export default function PricingPage() {
                 We support all major Texas teacher certifications including Core Subjects EC-6, Core Subjects 4-8, PPR, STR, and content-specific exams for high school teachers.
               </p>
             </div>
-            
             <div className="bg-white/80 rounded-xl p-6">
               <h3 className="text-lg font-medium text-green-800 mb-3">
                 How does the Pass Guarantee work?
@@ -297,7 +285,6 @@ export default function PricingPage() {
                 Complete 90% of your personalized study plan and take your exam within 30 days. If you don&apos;t pass, we&apos;ll extend your Pro subscription for 2 additional months at no cost—giving you more time to study and retake your exam.
               </p>
             </div>
-            
             <div className="bg-white/80 rounded-xl p-6">
               <h3 className="text-lg font-medium text-green-800 mb-3">
                 How do I manage my billing or cancel my subscription?
@@ -306,7 +293,6 @@ export default function PricingPage() {
                 You can cancel your subscription anytime by emailing us at support@certbloom.com. We&apos;re working on a self-service billing portal in your dashboard for even easier management.
               </p>
             </div>
-            
             <div className="bg-white/80 rounded-xl p-6">
               <h3 className="text-lg font-medium text-green-800 mb-3">
                 Do you offer yearly subscriptions?
@@ -318,7 +304,6 @@ export default function PricingPage() {
           </div>
         </div>
       </section>
-
       {/* Footer */}
       <footer className="px-6 py-8 text-center">
         <div className="max-w-6xl mx-auto">
@@ -328,4 +313,5 @@ export default function PricingPage() {
         </div>
       </footer>
     </div>
+  );
 }
