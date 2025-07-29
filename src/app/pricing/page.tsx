@@ -4,6 +4,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@supabase/supabase-js';
+
 
 export default function PricingPage() {
   const [loading, setLoading] = useState(false);
@@ -12,8 +14,13 @@ export default function PricingPage() {
   async function handleCheckout(plan: 'monthly' | 'yearly') {
     setLoading(true);
     try {
-      // Get JWT from localStorage or Supabase client (adjust as needed)
-      const token = localStorage.getItem('sb-access-token');
+      // Use Supabase client to get the current session's access token
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
       if (!token) {
         alert('Please sign in first.');
         router.push('/auth');
@@ -27,9 +34,9 @@ export default function PricingPage() {
         },
         body: JSON.stringify({ plan }),
       });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
+      const result = await res.json();
+      if (result.url) {
+        window.location.href = result.url;
       } else {
         alert('Error creating checkout session.');
       }

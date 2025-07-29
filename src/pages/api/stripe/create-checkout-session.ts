@@ -10,12 +10,14 @@ const supabase = createClient(
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
+    console.error('Method not allowed:', req.method);
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const { plan } = req.body; // 'monthly' or 'yearly'
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.error('Missing or invalid authorization header:', authHeader);
     return res.status(401).json({ error: 'Missing or invalid authorization header' });
   }
   const accessToken = authHeader.replace('Bearer ', '');
@@ -25,10 +27,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const jwtPayload = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString());
     uid = jwtPayload.sub;
-  } catch {
+  } catch (err) {
+    console.error('Invalid Supabase JWT:', err);
     return res.status(401).json({ error: 'Invalid Supabase JWT' });
   }
   if (!uid) {
+    console.error('Missing user UID from JWT payload:', accessToken);
     return res.status(401).json({ error: 'Missing user UID' });
   }
 
@@ -37,24 +41,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { data: userProfile, error } = await supabase
     .from('user_profiles')
     .select('stripe_customer_id, email')
-    .eq('uid', uid)
+    .eq('id', uid)
     .single();
   if (error || !userProfile) {
+    console.error('User profile not found:', error, userProfile, 'UID:', uid);
     return res.status(404).json({ error: 'User profile not found' });
   }
   stripeCustomerId = userProfile.stripe_customer_id;
 
   // If no Stripe customer, create one and save to Supabase
   if (!stripeCustomerId) {
-    const customer = await stripe.customers.create({
-      email: userProfile.email,
-      metadata: { uid },
-    });
-    stripeCustomerId = customer.id;
-    await supabase
-      .from('user_profiles')
-      .update({ stripe_customer_id: stripeCustomerId })
-      .eq('uid', uid);
+    try {
+      const customer = await stripe.customers.create({
+        email: userProfile.email,
+        metadata: { uid },
+      });
+      stripeCustomerId = customer.id;
+      await supabase
+        .from('user_profiles')
+        .update({ stripe_customer_id: stripeCustomerId })
+        .eq('id', uid);
+    } catch (err) {
+      console.error('Error creating Stripe customer:', err, 'Email:', userProfile.email, 'UID:', uid);
+      return res.status(500).json({ error: 'Error creating Stripe customer', details: err });
+    }
   }
 
   // Set price ID based on plan
@@ -64,6 +74,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } else if (plan === 'yearly') {
     priceId = process.env.STRIPE_YEARLY_PRICE_ID!;
   } else {
+    console.error('Invalid plan type:', plan);
     return res.status(400).json({ error: 'Invalid plan type' });
   }
 
@@ -84,6 +95,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
     return res.status(200).json({ url: session.url });
   } catch (error) {
+    console.error('Stripe Checkout error:', error, 'Customer ID:', stripeCustomerId, 'Price ID:', priceId);
     return res.status(500).json({ error: 'Stripe Checkout error', details: error });
   }
 }
