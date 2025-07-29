@@ -58,6 +58,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const result = await supabaseSignIn(email, password)
     if (result.success && result.user) {
       setUser(result.user)
+      // Check if user profile exists, create if missing
+      try {
+        const { supabase, createUserProfile } = await import('./supabase')
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('id')
+          .eq('id', result.user.id)
+          .single()
+        if (error || !data) {
+          // Profile missing, create it
+          await createUserProfile(result.user.id, {
+            email: result.user.email,
+            full_name: result.user.user_metadata?.full_name || '',
+          })
+        }
+      } catch (err) {
+        console.error('Error ensuring user profile exists after sign in:', err)
+      }
     }
     return result
   }
