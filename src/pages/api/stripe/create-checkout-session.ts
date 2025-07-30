@@ -3,10 +3,6 @@ import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -22,6 +18,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
   const accessToken = authHeader.replace('Bearer ', '');
 
+  // Create authenticated Supabase client with the user's token
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      global: {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      }
+    }
+  );
+
   // Get user UID from Supabase JWT
   let uid = null;
   try {
@@ -36,34 +45,123 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(401).json({ error: 'Missing user UID' });
   }
 
+  // Create admin client for operations that might need to bypass RLS
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
   // Check for existing Stripe customer ID
   let stripeCustomerId: string | null = null;
-  const { data: userProfile, error } = await supabase
-    .from('user_profiles')
-    .select('stripe_customer_id, email')
-    .eq('id', uid)
-    .single();
-  if (error || !userProfile) {
-    console.error('User profile not found:', error, userProfile, 'UID:', uid);
-    return res.status(404).json({ error: 'User profile not found' });
+  let userEmail = '';
+  
+  try {
+    // First try with the authenticated client
+    const { data: userProfile, error } = await supabase
+      .from('user_profiles')
+      .select('stripe_customer_id, email')
+      .eq('id', uid)
+      .single();
+    
+    if (error) {
+      console.log('Error fetching user profile with authenticated client:', error);
+      
+      // Fall back to admin client if available
+      if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        const { data: adminUserProfile, error: adminError } = await supabaseAdmin
+          .from('user_profiles')
+          .select('stripe_customer_id, email')
+          .eq('id', uid)
+          .single();
+        
+        if (adminError) {
+          console.error('Error fetching user profile with admin client:', adminError);
+        } else if (adminUserProfile) {
+          stripeCustomerId = adminUserProfile.stripe_customer_id;
+          userEmail = adminUserProfile.email;
+        }
+      }
+    } else if (userProfile) {
+      stripeCustomerId = userProfile.stripe_customer_id;
+      userEmail = userProfile.email;
+    }
+    
+    // If we still don't have a user profile, try to create one
+    if (!stripeCustomerId) {
+      // Get email from JWT payload
+      const jwtPayload = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString());
+      userEmail = jwtPayload.email || '';
+      
+      if (!userEmail) {
+        console.error('Email not found in JWT payload');
+        return res.status(400).json({ error: 'Email not found in user data' });
+      }
+      
+      // Try to create the profile with admin client if available
+      if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        const { error: createError } = await supabaseAdmin
+          .from('user_profiles')
+          .insert([
+            { 
+              id: uid, 
+              email: userEmail, 
+              created_at: new Date().toISOString(), 
+              updated_at: new Date().toISOString() 
+            }
+          ])
+          .select()
+          .single();
+          
+        if (createError) {
+          console.error('Failed to create user profile with admin client:', createError);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error in user profile operations:', err);
+    // Continue anyway, we'll create a Stripe customer with the email from JWT
   }
-  stripeCustomerId = userProfile.stripe_customer_id;
+
+  // If we still don't have an email, try to get it from the JWT
+  if (!userEmail) {
+    try {
+      const jwtPayload = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString());
+      userEmail = jwtPayload.email || '';
+      
+      if (!userEmail) {
+        console.error('Email not found in JWT payload');
+        return res.status(400).json({ error: 'Email not found in user data' });
+      }
+    } catch (err) {
+      console.error('Error extracting email from JWT:', err);
+      return res.status(500).json({ error: 'Could not determine user email' });
+    }
+  }
 
   // If no Stripe customer, create one and save to Supabase
   if (!stripeCustomerId) {
     try {
       const customer = await stripe.customers.create({
-        email: userProfile.email,
+        email: userEmail,
         metadata: { uid },
       });
       stripeCustomerId = customer.id;
-      await supabase
-        .from('user_profiles')
-        .update({ stripe_customer_id: stripeCustomerId })
-        .eq('id', uid);
+      
+      // Try to update the profile with the new Stripe customer ID
+      if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        const { error: updateError } = await supabaseAdmin
+          .from('user_profiles')
+          .update({ stripe_customer_id: stripeCustomerId })
+          .eq('id', uid);
+          
+        if (updateError) {
+          console.error('Error updating Stripe customer ID with admin client:', updateError);
+          // Continue anyway since we have the Stripe customer ID
+        }
+      }
     } catch (err) {
-      console.error('Error creating Stripe customer:', err, 'Email:', userProfile.email, 'UID:', uid);
-      return res.status(500).json({ error: 'Error creating Stripe customer', details: err });
+      console.error('Error creating Stripe customer:', err);
+      return res.status(500).json({ error: 'Error creating Stripe customer' });
     }
   }
 
@@ -78,6 +176,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'Invalid plan type' });
   }
 
+  // Get base URL with fallback
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
+  let successUrl = `${baseUrl}/dashboard?success=true`;
+  let cancelUrl = `${baseUrl}/pricing?canceled=true`;
+  
+  // Ensure URLs have proper protocol
+  if (!successUrl.startsWith('http')) {
+    // Use the request's protocol and host if available
+    const protocol = req.headers['x-forwarded-proto'] || 'http';
+    const host = req.headers.host || 'localhost:3000';
+    successUrl = `${protocol}://${host}/dashboard?success=true`;
+    cancelUrl = `${protocol}://${host}/pricing?canceled=true`;
+  }
+  
+  console.log('Success URL:', successUrl);
+  console.log('Cancel URL:', cancelUrl);
+
   // Create Stripe Checkout session
   try {
     const session = await stripe.checkout.sessions.create({
@@ -90,12 +205,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         },
       ],
       mode: 'subscription',
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/pricing?canceled=true`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
     });
     return res.status(200).json({ url: session.url });
   } catch (error) {
-    console.error('Stripe Checkout error:', error, 'Customer ID:', stripeCustomerId, 'Price ID:', priceId);
+    console.error('Stripe Checkout error:', error);
     return res.status(500).json({ error: 'Stripe Checkout error', details: error });
   }
 }
