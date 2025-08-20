@@ -7,27 +7,36 @@ import { useAuth } from '../../../lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 
-
 export default function PricingPage() {
-  const [loading, setLoading] = useState(false);
+  // Use a more specific loading state to track which plan is being processed
+  const [loadingPlan, setLoadingPlan] = useState<'monthly' | 'yearly' | null>(null);
   const router = useRouter();
   const { user, loading: authLoading, signOut } = useAuth();
 
   async function handleCheckout(plan: 'monthly' | 'yearly') {
-    setLoading(true);
+    if (!user) {
+      alert('Please sign in to choose a plan.');
+      router.push('/auth');
+      return;
+    }
+
+    setLoadingPlan(plan); // Set loading for the specific plan
+
     try {
-      // Use Supabase client to get the current session's access token
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
+
       if (!token) {
-        alert('Please sign in first.');
+        alert('Your session has expired. Please sign in again.');
+        setLoadingPlan(null);
         router.push('/auth');
         return;
       }
+
       const res = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: {
@@ -36,16 +45,28 @@ export default function PricingPage() {
         },
         body: JSON.stringify({ plan }),
       });
+
       const result = await res.json();
+
+      if (!res.ok) {
+        // If the response is not successful, throw an error with the message from the server
+        throw new Error(result.error || 'An unknown error occurred.');
+      }
+
       if (result.url) {
         window.location.href = result.url;
       } else {
-        alert('Error creating checkout session.');
+        throw new Error('Error creating checkout session: No URL returned.');
       }
-    } catch {
-      alert('Checkout error.');
+    } catch (error: unknown) {
+      // Display the specific error message from the server
+      if (error instanceof Error) {
+        alert(`Checkout Error: ${error.message}`);
+      } else {
+        alert('Checkout Error: An unknown error occurred.');
+      }
     } finally {
-      setLoading(false);
+      setLoadingPlan(null); // Reset loading state
     }
   }
 
@@ -205,11 +226,11 @@ export default function PricingPage() {
                   <span className="text-green-600 font-bold">$25/month</span>
                 </div>
                 <button
-                  disabled={loading}
+                  disabled={loadingPlan !== null}
                   onClick={() => handleCheckout('monthly')}
                   className="w-full block text-center py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-60"
                 >
-                  {loading ? 'Redirecting...' : 'Start Monthly Plan'}
+                  {loadingPlan === 'monthly' ? 'Redirecting...' : 'Start Monthly Plan'}
                 </button>
               </div>
               {/* Yearly Plan - Highlighted */}
@@ -232,11 +253,11 @@ export default function PricingPage() {
                   </span>
                 </div>
                 <button
-                  disabled={loading}
+                  disabled={loadingPlan !== null}
                   onClick={() => handleCheckout('yearly')}
                   className="w-full block text-center py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-colors font-medium shadow-lg disabled:opacity-60"
                 >
-                  {loading ? 'Redirecting...' : 'Get Yearly Plan - Save $201!'}
+                  {loadingPlan === 'yearly' ? 'Redirecting...' : 'Get Yearly Plan - Save $201!'}
                 </button>
               </div>
             </div>
