@@ -207,6 +207,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       mode: 'subscription',
       success_url: successUrl,
       cancel_url: cancelUrl,
+      metadata: {
+        userId: uid,
+      },
     });
     return res.status(200).json({ url: session.url });
   } catch (error) {
