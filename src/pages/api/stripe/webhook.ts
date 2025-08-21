@@ -30,6 +30,8 @@ export const config = {
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  console.log('🔔 Webhook received:', req.method);
+  
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).end('Method Not Allowed');
@@ -42,12 +44,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     if (!sig || !endpointSecret) {
-      console.error('Webhook Error: Missing Stripe signature or secret.');
+      console.error('❌ Webhook Error: Missing Stripe signature or secret.');
       return res.status(400).send('Webhook Error: Missing configuration.');
     }
     event = stripe.webhooks.constructEvent(buf, sig, endpointSecret);
+    console.log('✅ Webhook signature verified. Event type:', event.type);
   } catch (err) {
-    console.error(`Webhook signature verification failed: ${(err as Error).message}`);
+    console.error(`❌ Webhook signature verification failed: ${(err as Error).message}`);
     return res.status(400).send(`Webhook Error: ${(err as Error).message}`);
   }
 
