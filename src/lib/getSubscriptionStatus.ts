@@ -9,7 +9,7 @@ export async function getSubscriptionStatus(uid: string): Promise<'active' | 'ca
   const { data, error } = await supabase
     .from('user_profiles')
     .select('subscription_status')
-    .eq('uid', uid)
+    .eq('id', uid)
     .single();
   if (error || !data) return 'free';
   return (data.subscription_status as 'active' | 'canceled' | 'free') || 'free';
