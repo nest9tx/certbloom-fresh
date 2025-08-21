@@ -54,36 +54,42 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).send(`Webhook Error: ${(err as Error).message}`);
   }
 
-  // Handle the checkout.session.completed event
+    // Handle the checkout.session.completed event
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
     const userId = session.metadata?.userId;
     const stripeCustomerId = session.customer as string;
     const stripeSubscriptionId = session.subscription as string;
 
+    console.log('🎯 Processing checkout.session.completed event');
+    console.log('- User ID from metadata:', userId);
+    console.log('- Stripe Customer ID:', stripeCustomerId);
+    console.log('- Stripe Subscription ID:', stripeSubscriptionId);
+
     if (!userId) {
-      console.error('Webhook Error: No userId in session metadata');
+      console.error('❌ Webhook Error: No userId in session metadata');
       return res.status(400).send('Webhook Error: Missing user ID in metadata.');
     }
 
     try {
+      console.log('🔄 Updating user profile in database...');
       const { error } = await supabaseAdmin
-        .from('profiles') // Ensure this is your profiles table name
+        .from('user_profiles') // Make sure this matches your table name
         .update({
-          subscription_status: 'active', // Or 'premium', etc.
+          subscription_status: 'active',
           stripe_customer_id: stripeCustomerId,
           stripe_subscription_id: stripeSubscriptionId,
         })
         .eq('id', userId); // Use the user's ID to find the correct profile
 
       if (error) {
-        console.error(`Supabase update error for user ${userId}:`, error);
+        console.error(`❌ Supabase update error for user ${userId}:`, error);
         return res.status(500).send(`Webhook Error: ${error.message}`);
       }
 
-      console.log(`Successfully updated subscription for user: ${userId}`);
+      console.log(`✅ Successfully updated subscription for user: ${userId}`);
     } catch (dbError) {
-      console.error('Webhook handler database error:', dbError);
+      console.error('❌ Webhook handler database error:', dbError);
       return res.status(500).send('Webhook handler database error');
     }
   }
