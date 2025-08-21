@@ -73,6 +73,23 @@ export default function PracticeSessionPage() {
   const [confidence, setConfidence] = useState<number | null>(null);
   const [showBreathing, setShowBreathing] = useState(false);
   const [breathingCount, setBreathingCount] = useState(0);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'canceled' | 'free'>('free');
+
+  // Fetch subscription status
+  useEffect(() => {
+    async function fetchStatus() {
+      if (user) {
+        const { getSubscriptionStatus } = await import('../../../lib/getSubscriptionStatus');
+        const status = await getSubscriptionStatus(user.id);
+        setSubscriptionStatus(status);
+      }
+    }
+    fetchStatus();
+  }, [user]);
+
+  // Determine question limit based on subscription
+  const questionLimit = subscriptionStatus === 'active' ? sampleQuestions.length : 5;
+  const availableQuestions = sampleQuestions.slice(0, questionLimit);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -93,7 +110,9 @@ export default function PracticeSessionPage() {
   };
 
   const handleNextQuestion = () => {
-    if (currentQuestion < sampleQuestions.length - 1) {
+    if (selectedAnswer === null) return;
+    
+    if (currentQuestion < availableQuestions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
       setSelectedAnswer(null);
       setShowExplanation(false);
@@ -122,8 +141,9 @@ export default function PracticeSessionPage() {
 
   if (!user) return null;
 
-  const currentQ = sampleQuestions[currentQuestion];
-  const score = Math.round((answers.filter((answer, index) => answer === sampleQuestions[index].correct).length / answers.length) * 100);
+  const currentQ = availableQuestions[currentQuestion];
+  const score = Math.round((answers.filter((answer, index) => answer === availableQuestions[index].correct).length / answers.length) * 100);
+  const isFreePlan = subscriptionStatus !== 'active';
 
   if (sessionComplete) {
     return (
@@ -180,6 +200,23 @@ export default function PracticeSessionPage() {
                   <p className="text-green-600">🌱 <strong>Next Session:</strong> We&apos;ll emphasize assessment and add more scaffolding</p>
                 </div>
               </div>
+
+              {/* Free Plan Upgrade Invitation */}
+              {isFreePlan && (
+                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-6 mb-6">
+                  <h4 className="text-lg font-semibold text-green-800 mb-3">🌟 Continue Your Journey</h4>
+                  <p className="text-green-600 mb-4">
+                    You&apos;ve completed your free practice questions! To unlock unlimited questions, 
+                    detailed explanations, and advanced adaptive features, consider upgrading to CertBloom Pro.
+                  </p>
+                  <Link 
+                    href="/pricing"
+                    className="inline-flex items-center px-4 py-2 bg-yellow-400 text-green-900 rounded-lg hover:bg-yellow-500 transition-colors font-medium"
+                  >
+                    🚀 Upgrade to Pro
+                  </Link>
+                </div>
+              )}
 
               {/* Mindful Reflection */}
               <div className="bg-blue-50 rounded-xl p-6">
@@ -247,11 +284,14 @@ export default function PracticeSessionPage() {
             
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <span className="text-green-600">Question {currentQuestion + 1} of {sampleQuestions.length}</span>
+                <span className="text-green-600">
+                  Question {currentQuestion + 1} of {availableQuestions.length}
+                  {isFreePlan && <span className="text-yellow-600 ml-2">(Free: 5 questions)</span>}
+                </span>
                 <div className="w-48 bg-green-200 rounded-full h-2">
                   <div 
                     className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${((currentQuestion + 1) / sampleQuestions.length) * 100}%` }}
+                    style={{ width: `${((currentQuestion + 1) / availableQuestions.length) * 100}%` }}
                   ></div>
                 </div>
               </div>
