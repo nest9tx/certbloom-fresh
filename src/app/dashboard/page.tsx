@@ -18,17 +18,25 @@ export default function DashboardPage() {
   const [currentProgress] = useState(42);
   // Subscription status (mocked for now, replace with Supabase query)
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'canceled' | 'free'>('free');
+  const [userCertificationGoal, setUserCertificationGoal] = useState<string | null>(null);
 
   // Fetch subscription status from Supabase
   useEffect(() => {
-    async function fetchStatus() {
+    async function fetchUserData() {
       if (user) {
         const { getSubscriptionStatus } = await import('../../lib/getSubscriptionStatus');
-        const status = await getSubscriptionStatus(user.id);
+        const { getUserCertificationGoal } = await import('../../lib/getUserCertificationGoal');
+        
+        const [status, certificationGoal] = await Promise.all([
+          getSubscriptionStatus(user.id),
+          getUserCertificationGoal(user.id)
+        ]);
+        
         setSubscriptionStatus(status);
+        setUserCertificationGoal(certificationGoal);
       }
     }
-    fetchStatus();
+    fetchUserData();
   }, [user]);
 
   const moodOptions = [
@@ -170,6 +178,33 @@ export default function DashboardPage() {
 
           {/* Progress Overview */}
           <div className="grid lg:grid-cols-4 gap-6 mb-12">
+            {/* Certification Goal */}
+            <div className="bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl p-6 border border-blue-200/60 shadow-lg">
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-3xl">🎯</div>
+                <Link 
+                  href="/settings"
+                  className="text-blue-600 hover:text-blue-800 text-sm"
+                >
+                  Change
+                </Link>
+              </div>
+              <h3 className="text-lg font-semibold text-green-800 mb-2">Certification Goal</h3>
+              {userCertificationGoal ? (
+                <p className="text-blue-600 text-sm font-medium">{userCertificationGoal}</p>
+              ) : (
+                <div>
+                  <p className="text-gray-500 text-sm mb-2">Not set</p>
+                  <Link 
+                    href="/settings"
+                    className="text-xs text-blue-600 hover:text-blue-800 underline"
+                  >
+                    Choose your certification
+                  </Link>
+                </div>
+              )}
+            </div>
+
             {/* Study Streak */}
             <div className="bg-gradient-to-br from-green-100 to-green-50 rounded-2xl p-6 border border-green-200/60 shadow-lg">
               <div className="flex items-center justify-between mb-4">

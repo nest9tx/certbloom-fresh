@@ -61,14 +61,14 @@ export default function PracticeSessionPage() {
       let filteredQuestions = certificationQuestions;
       
       if (userCertificationGoal) {
-        filteredQuestions = certificationQuestions.filter(question => 
+        const certSpecificQuestions = certificationQuestions.filter(question => 
           question.certifications.includes(userCertificationGoal)
         );
-      }
-      
-      // If no certification-specific questions found, fall back to all questions
-      if (filteredQuestions.length === 0) {
-        filteredQuestions = certificationQuestions;
+        
+        // Use certification-specific questions if available, otherwise use all questions
+        if (certSpecificQuestions.length > 0) {
+          filteredQuestions = certSpecificQuestions;
+        }
       }
       
       // For free users, limit to 5 questions. For Pro users, use more variety
@@ -138,6 +138,66 @@ export default function PracticeSessionPage() {
   }
 
   if (!user) return null;
+
+  // Don't render until we have questions loaded and subscription status is known
+  if (availableQuestions.length === 0 && subscriptionStatus !== null) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="text-6xl mb-4">📚</div>
+          <h2 className="text-2xl font-semibold text-green-800 mb-4">No Questions Available</h2>
+          {userCertificationGoal ? (
+            <div>
+              <p className="text-green-600 mb-4">
+                We couldn&apos;t find questions for <strong>{userCertificationGoal}</strong> yet.
+              </p>
+              <p className="text-green-500 text-sm mb-6">
+                Our team is working on adding more certification-specific questions. 
+                In the meantime, you can practice with our general TExES questions.
+              </p>
+            </div>
+          ) : (
+            <div>
+              <p className="text-green-600 mb-4">
+                Please select your certification goal to get personalized questions.
+              </p>
+            </div>
+          )}
+          <div className="space-y-4">
+            <Link 
+              href="/settings"
+              className="block px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors"
+            >
+              {userCertificationGoal ? 'Change Certification' : 'Select Certification'}
+            </Link>
+            <Link 
+              href="/dashboard"
+              className="block px-6 py-3 border-2 border-green-600 text-green-600 rounded-xl hover:bg-green-50 transition-colors"
+            >
+              Back to Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Still loading
+  if (availableQuestions.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4 animate-pulse">🌸</div>
+          <p className="text-green-600">Preparing your personalized questions...</p>
+          {userCertificationGoal && (
+            <p className="text-green-500 text-sm mt-2">
+              Loading questions for: {userCertificationGoal}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   // Check daily session limit for free users
   const maxDailySessions = 3;
@@ -355,6 +415,19 @@ export default function PracticeSessionPage() {
               </button>
             </div>
             
+            {/* Certification Goal Display */}
+            {userCertificationGoal && (
+              <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-4 mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="text-2xl">🎯</div>
+                  <div>
+                    <p className="text-sm font-medium text-green-700">Studying for:</p>
+                    <p className="text-green-800 font-semibold">{userCertificationGoal}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <span className="text-green-600">
@@ -467,7 +540,7 @@ export default function PracticeSessionPage() {
                   disabled={confidence === null}
                   className="px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {currentQuestion < certificationQuestions.length - 1 ? 'Next Question' : 'Complete Session'} →
+                  {currentQuestion < availableQuestions.length - 1 ? 'Next Question' : 'Complete Session'} →
                 </button>
               )}
             </div>

@@ -39,7 +39,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string, fullName: string, certificationGoal?: string) => {
     const result = await supabaseSignUp(email, password, fullName)
     if (result.success && result.user) {
-      setUser(result.user)
+      // Don't set user state immediately - wait for email confirmation
+      // setUser(result.user)
+      
       // Create user profile in user_profiles table
       try {
         const { createUserProfile } = await import('./supabase')

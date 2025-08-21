@@ -296,10 +296,10 @@ export default function HomePage() {
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8 max-w-md mx-auto">
                 <Link 
-                  href="/auth"
+                  href="/select-certification"
                   className="w-full sm:w-auto px-10 py-4 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-xl hover:shadow-2xl transform hover:scale-105 font-medium text-center"
                 >
-                  Start Free Account
+                  🎯 Start Your Journey
                 </Link>
                 <Link 
                   href="/pricing"
@@ -378,7 +378,7 @@ export default function HomePage() {
               <h4 className="font-semibold text-white mb-4">Quick Links</h4>
               <div className="space-y-2">
                 <Link href="/pricing" className="block text-green-200 hover:text-white transition-colors">Pricing</Link>
-                <Link href="/auth" className="block text-green-200 hover:text-white transition-colors">Sign In</Link>
+                <Link href="/select-certification" className="block text-green-200 hover:text-white transition-colors">Get Started</Link>
                 <a href="#features" className="block text-green-200 hover:text-white transition-colors">Features</a>
                 <Link href="/about" className="block text-green-200 hover:text-white transition-colors">About</Link>
               </div>
