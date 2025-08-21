@@ -65,7 +65,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     try {
       const { error } = await supabaseAdmin
-        .from('user_profiles') // Ensure this is your profiles table name
+        .from('profiles') // Ensure this is your profiles table name
         .update({
           subscription_status: 'active', // Or 'premium', etc.
           stripe_customer_id: stripeCustomerId,
