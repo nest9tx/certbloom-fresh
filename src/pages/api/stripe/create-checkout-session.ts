@@ -140,12 +140,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // If no Stripe customer, create one and save to Supabase
   if (!stripeCustomerId) {
+    console.log('Creating new Stripe customer for user:', uid, 'with email:', userEmail);
     try {
       const customer = await stripe.customers.create({
         email: userEmail,
         metadata: { uid },
       });
       stripeCustomerId = customer.id;
+      console.log('Created Stripe customer:', stripeCustomerId);
       
       // Try to update the profile with the new Stripe customer ID
       if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -157,12 +159,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (updateError) {
           console.error('Error updating Stripe customer ID with admin client:', updateError);
           // Continue anyway since we have the Stripe customer ID
+        } else {
+          console.log('Successfully updated user profile with Stripe customer ID');
         }
       }
     } catch (err) {
       console.error('Error creating Stripe customer:', err);
       return res.status(500).json({ error: 'Error creating Stripe customer' });
     }
+  } else {
+    console.log('Using existing Stripe customer:', stripeCustomerId);
   }
 
   // Set price ID based on plan
@@ -195,6 +201,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Create Stripe Checkout session
   try {
+    console.log('Creating Stripe checkout session with:');
+    console.log('- Customer ID:', stripeCustomerId);
+    console.log('- Price ID:', priceId);
+    console.log('- User ID for metadata:', uid);
+    
     const session = await stripe.checkout.sessions.create({
       customer: stripeCustomerId,
       payment_method_types: ['card'],
@@ -211,6 +222,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         userId: uid,
       },
     });
+    
+    console.log('Successfully created Stripe session:', session.id);
     return res.status(200).json({ url: session.url });
   } catch (error) {
     console.error('Stripe Checkout error:', error);
