@@ -10,6 +10,9 @@ CREATE TABLE IF NOT EXISTS public.user_profiles (
   alt_cert_program TEXT,
   study_style TEXT CHECK (study_style IN ('visual', 'auditory', 'kinesthetic', 'reading')),
   anxiety_level INTEGER CHECK (anxiety_level >= 1 AND anxiety_level <= 5),
+  stripe_customer_id TEXT,
+  subscription_status TEXT DEFAULT 'free' CHECK (subscription_status IN ('free', 'active', 'canceled', 'past_due')),
+  stripe_subscription_id TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   PRIMARY KEY (id)
