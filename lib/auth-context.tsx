@@ -7,7 +7,7 @@ import { signUp as supabaseSignUp, signIn as supabaseSignIn, signOut as supabase
 interface AuthContextType {
   user: User | null
   loading: boolean
-  signUp: (email: string, password: string, fullName: string) => Promise<{ success: boolean; error?: string }>
+  signUp: (email: string, password: string, fullName: string, certificationGoal?: string) => Promise<{ success: boolean; error?: string }>
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
   signOut: () => Promise<{ success: boolean; error?: string }>
 }
@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     getInitialUser()
   }, [])
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, certificationGoal?: string) => {
     const result = await supabaseSignUp(email, password, fullName)
     if (result.success && result.user) {
       setUser(result.user)
@@ -46,6 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await createUserProfile(result.user.id, {
           email,
           full_name: fullName,
+          certification_goal: certificationGoal,
         })
       } catch (err) {
         console.error('Error creating user profile:', err)

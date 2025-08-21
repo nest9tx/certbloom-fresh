@@ -13,10 +13,24 @@ function AuthPageContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showEmailSent, setShowEmailSent] = useState(false);
+  const [selectedCertification, setSelectedCertification] = useState<string | null>(null);
   
   const { signUp, signIn, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Get certification from URL params or localStorage
+  useEffect(() => {
+    const certificationParam = searchParams?.get('certification');
+    const storedCertification = localStorage.getItem('selectedCertification');
+    
+    if (certificationParam) {
+      setSelectedCertification(certificationParam);
+      localStorage.setItem('selectedCertification', certificationParam);
+    } else if (storedCertification) {
+      setSelectedCertification(storedCertification);
+    }
+  }, [searchParams]);
 
   // Check for error messages in URL parameters
   useEffect(() => {
@@ -49,9 +63,11 @@ function AuthPageContent() {
 
     try {
       if (isSignUp) {
-        const result = await signUp(email, password, fullName);
+        const result = await signUp(email, password, fullName, selectedCertification || undefined);
         if (result.success) {
           setShowEmailSent(true);
+          // Clear stored certification after successful signup
+          localStorage.removeItem('selectedCertification');
           // Don't redirect immediately for sign up - user needs to confirm email
         } else {
           setError(result.error || 'Something went wrong');
@@ -88,6 +104,23 @@ function AuthPageContent() {
               }
             </p>
           </div>
+
+          {/* Show selected certification */}
+          {selectedCertification && isSignUp && (
+            <div className="mb-6 bg-gradient-to-r from-green-50 to-yellow-50 border border-green-200 rounded-xl p-4">
+              <div className="text-center">
+                <div className="text-2xl mb-2">🎯</div>
+                <p className="text-sm font-medium text-green-700 mb-1">Your Selected Certification Path:</p>
+                <p className="text-green-800 font-semibold">{selectedCertification}</p>
+                <Link 
+                  href="/select-certification" 
+                  className="text-xs text-green-600 hover:text-green-800 underline mt-2 inline-block"
+                >
+                  Change certification
+                </Link>
+              </div>
+            </div>
+          )}
 
           {/* Show email sent message */}
           {showEmailSent ? (

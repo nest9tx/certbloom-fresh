@@ -101,8 +101,8 @@ export default function HomePage() {
                 </button>
               </>
             ) : (
-              <Link href="/auth" className="px-6 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
-                Sign In
+              <Link href="/select-certification" className="px-6 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
+                Get Started
               </Link>
             )}
           </div>
@@ -141,10 +141,10 @@ export default function HomePage() {
             <div className="space-y-6 max-w-lg mx-auto lg:mx-0">
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link 
-                  href="/auth"
+                  href="/select-certification"
                   className="flex-1 px-8 py-4 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-xl hover:shadow-2xl transform hover:scale-105 font-medium text-center"
                 >
-                  Start Free Today
+                  🎯 Choose Your Certification
                 </Link>
                 <Link 
                   href="/pricing"

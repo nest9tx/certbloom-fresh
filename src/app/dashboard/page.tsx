@@ -88,6 +88,7 @@ export default function DashboardPage() {
           <div className="hidden md:flex items-center space-x-8">
             <Link href="/" className="text-green-700 hover:text-green-900 transition-colors font-medium">Home</Link>
             <Link href="/pricing" className="text-green-700 hover:text-green-900 transition-colors font-medium">Pricing</Link>
+            <Link href="/settings" className="text-green-700 hover:text-green-900 transition-colors font-medium">Settings</Link>
             <Link href="/about" className="text-green-700 hover:text-green-900 transition-colors font-medium">About</Link>
             <Link href="/contact" className="text-green-700 hover:text-green-900 transition-colors font-medium">Contact</Link>
             <span className="text-green-600 font-medium text-sm">Welcome, {user.user_metadata?.full_name || user.email?.split('@')[0] || 'Learner'}!</span>

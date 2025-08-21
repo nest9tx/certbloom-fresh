@@ -6,7 +6,23 @@ CREATE TABLE IF NOT EXISTS public.user_profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT,
   full_name TEXT,
-  certification_goal TEXT,
+  certification_goal TEXT CHECK (certification_goal IN (
+    'EC-6 Core Subjects',
+    'ELA 4-8',
+    'Math 4-8', 
+    'Science 4-8',
+    'Social Studies 4-8',
+    'PPR EC-12',
+    'STR Supplemental',
+    'ESL Supplemental',
+    'Special Education EC-12',
+    'Bilingual Education Supplemental',
+    'Math 7-12',
+    'English 7-12',
+    'Science 7-12',
+    'Social Studies 7-12',
+    'Other'
+  )),
   alt_cert_program TEXT,
   study_style TEXT CHECK (study_style IN ('visual', 'auditory', 'kinesthetic', 'reading')),
   anxiety_level INTEGER CHECK (anxiety_level >= 1 AND anxiety_level <= 5),
@@ -22,6 +38,7 @@ CREATE TABLE IF NOT EXISTS public.user_profiles (
 CREATE TABLE IF NOT EXISTS public.practice_sessions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  certification_type TEXT, -- Which certification this session was for
   session_type TEXT DEFAULT 'practice',
   questions_answered INTEGER DEFAULT 0,
   correct_answers INTEGER DEFAULT 0,
