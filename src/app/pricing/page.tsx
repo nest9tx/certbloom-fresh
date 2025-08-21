@@ -47,6 +47,8 @@ export default function PricingPage() {
       });
 
       const result = await res.json();
+      console.log('API Response:', result); // Add this line for debugging
+      console.log('Response status:', res.status); // Add this line for debugging
 
       if (!res.ok) {
         // If the response is not successful, throw an error with the message from the server
