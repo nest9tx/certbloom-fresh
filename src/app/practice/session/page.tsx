@@ -16,7 +16,7 @@ interface Question {
   topic: string;
 }
 
-// Sample adaptive questions
+// Expanded question bank for TExES certification practice
 const sampleQuestions: Question[] = [
   {
     id: 1,
@@ -58,7 +58,175 @@ const sampleQuestions: Question[] = [
     correct: 2,
     explanation: "A combination allows for ongoing feedback (formative) and final evaluation (summative) to track growth.",
     difficulty: 'easy',
-    topic: 'Assessment'
+    topic: 'Assessment Strategies'
+  },
+  {
+    id: 4,
+    content: "Which of the following is the most effective strategy for helping a student who is struggling with reading comprehension?",
+    options: [
+      "Have the student read more difficult texts to challenge them",
+      "Focus on phonics instruction exclusively",
+      "Use graphic organizers and teach metacognitive strategies",
+      "Reduce the amount of reading assignments"
+    ],
+    correct: 2,
+    explanation: "Using graphic organizers and teaching metacognitive strategies helps students organize information and become aware of their thinking processes, which directly supports reading comprehension development.",
+    difficulty: 'medium',
+    topic: 'Reading Instruction'
+  },
+  {
+    id: 5,
+    content: "What is the primary purpose of a KWL chart in elementary education?",
+    options: [
+      "To assess students' final understanding of a topic",
+      "To activate prior knowledge and guide learning",
+      "To organize students into reading groups",
+      "To track student behavior patterns"
+    ],
+    correct: 1,
+    explanation: "A KWL chart (Know, Want to know, Learned) helps activate students' prior knowledge, generates curiosity about new learning, and provides a framework for reflecting on what was learned.",
+    difficulty: 'easy',
+    topic: 'Instructional Strategies'
+  },
+  {
+    id: 6,
+    content: "Which classroom management approach is most effective for building positive relationships with students?",
+    options: [
+      "Strict disciplinary rules with immediate consequences",
+      "Allowing students complete freedom to choose their behavior",
+      "Positive behavioral interventions and consistent expectations",
+      "Public recognition only for academic achievements"
+    ],
+    correct: 2,
+    explanation: "Positive behavioral interventions combined with consistent expectations create a supportive environment that builds trust, reduces behavioral issues, and promotes student engagement.",
+    difficulty: 'medium',
+    topic: 'Classroom Management'
+  },
+  {
+    id: 7,
+    content: "When teaching mathematical problem-solving, which strategy best supports student understanding?",
+    options: [
+      "Providing the correct formula immediately",
+      "Having students memorize multiple solution methods",
+      "Encouraging multiple solution pathways and student explanation",
+      "Using only abstract numerical problems"
+    ],
+    correct: 2,
+    explanation: "Encouraging multiple solution pathways and having students explain their thinking develops deeper mathematical understanding and problem-solving skills.",
+    difficulty: 'medium',
+    topic: 'Mathematics Instruction'
+  },
+  {
+    id: 8,
+    content: "Which practice best supports differentiated instruction in a diverse classroom?",
+    options: [
+      "Using the same teaching method for all students",
+      "Providing multiple ways to access, process, and express learning",
+      "Grouping students only by ability level",
+      "Focusing instruction on grade-level standards only"
+    ],
+    correct: 1,
+    explanation: "Differentiated instruction involves providing multiple ways for students to access content, process information, and express their learning, accommodating diverse learning needs and preferences.",
+    difficulty: 'medium',
+    topic: 'Differentiated Instruction'
+  },
+  {
+    id: 9,
+    content: "What is the most important factor in creating an inclusive classroom environment?",
+    options: [
+      "Having identical expectations for all students",
+      "Celebrating diversity and individual strengths",
+      "Focusing only on academic achievement",
+      "Minimizing cultural differences"
+    ],
+    correct: 1,
+    explanation: "Creating an inclusive environment involves celebrating diversity, recognizing individual strengths, and ensuring all students feel valued and supported in their learning journey.",
+    difficulty: 'easy',
+    topic: 'Inclusive Education'
+  },
+  {
+    id: 10,
+    content: "Which strategy is most effective for teaching scientific inquiry to elementary students?",
+    options: [
+      "Lecture-based instruction with detailed notes",
+      "Hands-on investigations with guided questioning",
+      "Independent reading of science textbooks",
+      "Memorization of scientific facts and formulas"
+    ],
+    correct: 1,
+    explanation: "Hands-on investigations with guided questioning engage students in authentic scientific practices, develop critical thinking skills, and make abstract concepts concrete and meaningful.",
+    difficulty: 'medium',
+    topic: 'Science Instruction'
+  },
+  {
+    id: 11,
+    content: "When working with parents as educational partners, which approach is most effective?",
+    options: [
+      "Communicating only when problems arise",
+      "Maintaining regular, positive communication and collaboration",
+      "Limiting communication to formal conferences only",
+      "Focusing discussions solely on academic deficits"
+    ],
+    correct: 1,
+    explanation: "Regular, positive communication and collaboration with families builds strong partnerships that support student success both at home and school.",
+    difficulty: 'easy',
+    topic: 'Family Engagement'
+  },
+  {
+    id: 12,
+    content: "Which instructional approach best supports students with different learning styles?",
+    options: [
+      "Using only visual aids and materials",
+      "Incorporating multiple modalities (visual, auditory, kinesthetic)",
+      "Relying primarily on lecture-style teaching",
+      "Using only technology-based instruction"
+    ],
+    correct: 1,
+    explanation: "Incorporating multiple modalities ensures that instruction reaches students with different learning preferences and strengthens understanding through various pathways.",
+    difficulty: 'medium',
+    topic: 'Learning Styles'
+  },
+  {
+    id: 13,
+    content: "What is the primary benefit of formative assessment in education?",
+    options: [
+      "Assigning final grades to students",
+      "Comparing students to grade-level standards",
+      "Providing ongoing feedback to guide instruction",
+      "Meeting state testing requirements"
+    ],
+    correct: 2,
+    explanation: "Formative assessment provides ongoing feedback that helps teachers adjust instruction in real-time and helps students understand their progress and areas for improvement.",
+    difficulty: 'medium',
+    topic: 'Assessment Strategies'
+  },
+  {
+    id: 14,
+    content: "Which approach best supports social-emotional learning in the classroom?",
+    options: [
+      "Focusing only on academic content",
+      "Integrating SEL into daily routines and academic lessons",
+      "Addressing SEL issues only when problems occur",
+      "Using SEL as a separate, isolated curriculum"
+    ],
+    correct: 1,
+    explanation: "Integrating social-emotional learning into daily routines and academic lessons creates authentic opportunities for students to develop these crucial life skills in meaningful contexts.",
+    difficulty: 'medium',
+    topic: 'Social-Emotional Learning'
+  },
+  {
+    id: 15,
+    content: "When teaching reading to early learners, which component is essential for building foundational skills?",
+    options: [
+      "Focusing only on sight word memorization",
+      "Balancing phonemic awareness, phonics, fluency, vocabulary, and comprehension",
+      "Using only whole language approaches",
+      "Emphasizing spelling rules exclusively"
+    ],
+    correct: 1,
+    explanation: "Effective reading instruction includes the five essential components: phonemic awareness, phonics, fluency, vocabulary, and comprehension, working together to build strong readers.",
+    difficulty: 'medium',
+    topic: 'Reading Instruction'
   }
 ];
 
@@ -74,6 +242,11 @@ export default function PracticeSessionPage() {
   const [showBreathing, setShowBreathing] = useState(false);
   const [breathingCount, setBreathingCount] = useState(0);
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'canceled' | 'free'>('free');
+  const [dailySessionCount, setDailySessionCount] = useState(0);
+  const [questionsUsed, setQuestionsUsed] = useState<number[]>([]);
+
+  // Get today's date as a string for localStorage key
+  const todayKey = new Date().toDateString();
 
   // Fetch subscription status
   useEffect(() => {
@@ -87,9 +260,33 @@ export default function PracticeSessionPage() {
     fetchStatus();
   }, [user]);
 
+  // Track daily sessions for free users
+  useEffect(() => {
+    if (user && subscriptionStatus === 'free') {
+      const sessionKey = `dailySessions_${user.id}_${todayKey}`;
+      const storedCount = localStorage.getItem(sessionKey);
+      setDailySessionCount(storedCount ? parseInt(storedCount) : 0);
+    }
+  }, [user, subscriptionStatus, todayKey]);
+
+  // Create randomized question set for this session
+  useEffect(() => {
+    if (subscriptionStatus !== null) {
+      // For free users, limit to 5 questions. For Pro users, use more variety
+      const maxQuestions = subscriptionStatus === 'active' ? sampleQuestions.length : 5;
+      
+      // Shuffle questions to provide variety
+      const shuffled = [...sampleQuestions].sort(() => Math.random() - 0.5);
+      const sessionQuestions = shuffled.slice(0, maxQuestions).map((_, index) => index);
+      setQuestionsUsed(sessionQuestions);
+    }
+  }, [subscriptionStatus]);
+
   // Determine question limit based on subscription
   const questionLimit = subscriptionStatus === 'active' ? sampleQuestions.length : 5;
-  const availableQuestions = sampleQuestions.slice(0, questionLimit);
+  const availableQuestions = questionsUsed.length > 0 
+    ? questionsUsed.map(index => sampleQuestions[index])
+    : sampleQuestions.slice(0, questionLimit);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -118,6 +315,13 @@ export default function PracticeSessionPage() {
       setShowExplanation(false);
       setConfidence(null);
     } else {
+      // Session complete - track it for free users
+      if (user && subscriptionStatus === 'free') {
+        const sessionKey = `dailySessions_${user.id}_${todayKey}`;
+        const newCount = dailySessionCount + 1;
+        localStorage.setItem(sessionKey, newCount.toString());
+        setDailySessionCount(newCount);
+      }
       setSessionComplete(true);
     }
   };
@@ -140,6 +344,81 @@ export default function PracticeSessionPage() {
   }
 
   if (!user) return null;
+
+  // Check daily session limit for free users
+  const maxDailySessions = 3;
+  const hasReachedDailyLimit = subscriptionStatus === 'free' && dailySessionCount >= maxDailySessions;
+
+  // Show daily limit reached message for free users
+  if (hasReachedDailyLimit) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50">
+        {/* Navigation */}
+        <nav className="relative z-10 bg-white/80 backdrop-blur-md border-b border-green-200/50">
+          <div className="max-w-7xl mx-auto flex items-center justify-between p-6">
+            <Link href="/" className="flex items-center space-x-3 group">
+              <div className="w-10 h-10 transition-transform group-hover:scale-105">
+                <Image src="/certbloom-logo.svg" alt="CertBloom" width={40} height={40} className="w-full h-full object-contain" />
+              </div>
+              <div className="text-2xl font-light text-green-800 tracking-wide">CertBloom</div>
+            </Link>
+            <Link href="/dashboard" className="text-green-600 hover:text-green-700 font-medium">
+              ← Back to Dashboard
+            </Link>
+          </div>
+        </nav>
+
+        {/* Daily Limit Reached */}
+        <div className="container mx-auto px-6 py-12">
+          <div className="max-w-2xl mx-auto text-center">
+            <div className="text-6xl mb-6">🌱</div>
+            <h1 className="text-4xl font-light text-green-800 mb-4">Daily Practice Complete!</h1>
+            <p className="text-xl text-green-600 mb-8">
+              You&apos;ve completed your 3 practice sessions for today. Your mind needs time to process and grow.
+            </p>
+
+            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-8 mb-8">
+              <h3 className="text-2xl font-semibold text-green-800 mb-4">🌟 Ready for More?</h3>
+              <p className="text-green-600 mb-6">
+                With CertBloom Pro, you can access unlimited practice sessions, advanced analytics, 
+                and personalized learning paths that adapt to your progress.
+              </p>
+              <Link 
+                href="/pricing"
+                className="inline-flex items-center px-6 py-3 bg-yellow-400 text-green-900 rounded-lg hover:bg-yellow-500 transition-colors font-medium text-lg"
+              >
+                🚀 Upgrade to Pro
+              </Link>
+            </div>
+
+            <div className="bg-blue-50 rounded-xl p-6 mb-8">
+              <h4 className="text-lg font-semibold text-green-800 mb-3">Mindful Learning</h4>
+              <p className="text-green-600 italic">
+                &quot;Rest is not idleness, and to lie sometimes on the grass under trees on a summer&apos;s day, 
+                listening to the murmur of the water, or watching the clouds float across the sky, 
+                is by no means a waste of time.&quot; - John Lubbock
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/dashboard"
+                className="px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                Return to Dashboard
+              </Link>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-8 py-3 border-2 border-green-600 text-green-600 rounded-xl hover:bg-green-50 transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                Check Again Tomorrow
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const currentQ = availableQuestions[currentQuestion];
   const score = Math.round((answers.filter((answer, index) => answer === availableQuestions[index].correct).length / answers.length) * 100);
