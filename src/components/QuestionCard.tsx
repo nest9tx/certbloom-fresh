@@ -1,5 +1,5 @@
 import React from 'react';
-import { Question } from '../../lib/questionBank';
+import { Question, AnswerChoice } from '../lib/questionBankWorking';
 
 interface QuestionCardProps {
   question: Question;
@@ -24,7 +24,7 @@ export default function QuestionCard({
     );
   }
 
-  const sortedChoices = question.answer_choices.sort((a, b) => a.choice_order - b.choice_order);
+  const sortedChoices = question.answer_choices?.sort((a: AnswerChoice, b: AnswerChoice) => a.choice_order - b.choice_order) || [];
 
   return (
     <div className="bg-white rounded-xl border border-green-200 p-6 shadow-sm">
@@ -59,7 +59,7 @@ export default function QuestionCard({
 
       {/* Answer Choices */}
       <div className="space-y-3">
-        {sortedChoices.map((choice, index) => {
+        {sortedChoices.map((choice: AnswerChoice, index: number) => {
           const choiceLetter = String.fromCharCode(65 + index); // A, B, C, D
           const isSelected = selectedAnswer === choice.id;
           const isCorrect = choice.is_correct;
@@ -128,7 +128,7 @@ export default function QuestionCard({
       {/* Question Tags */}
       {question.tags && question.tags.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-2">
-          {question.tags.map((tag, index) => (
+          {question.tags.map((tag: string, index: number) => (
             <span
               key={index}
               className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs"

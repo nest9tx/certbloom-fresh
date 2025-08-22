@@ -5,7 +5,8 @@ import { useAuth } from '../../../../lib/auth-context';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { certificationQuestions } from '../../../lib/questions';
+import { getAdaptiveQuestions, recordQuestionAttempt } from '@/lib/questionBankWorking';
+import type { Question, QuestionAttempt, AnswerChoice } from '@/lib/questionBankWorking';
 
 export default function PracticeSessionPage() {
   const { user, loading } = useAuth();
@@ -21,7 +22,9 @@ export default function PracticeSessionPage() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'canceled' | 'free'>('free');
   const [dailySessionCount, setDailySessionCount] = useState(0);
   const [userCertificationGoal, setUserCertificationGoal] = useState<string | null>(null);
-  const [availableQuestions, setAvailableQuestions] = useState<typeof certificationQuestions>([]);
+  const [availableQuestions, setAvailableQuestions] = useState<Question[]>([]);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
+  const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substring(2)}`);
 
   // Get today's date as a string for localStorage key
   const todayKey = new Date().toDateString();
@@ -54,33 +57,38 @@ export default function PracticeSessionPage() {
     }
   }, [user, subscriptionStatus, todayKey]);
 
-  // Create randomized question set for this session based on certification
+  // Load questions from database based on certification
   useEffect(() => {
-    if (subscriptionStatus !== null) {
-      // Filter questions based on user's certification goal
-      let filteredQuestions = certificationQuestions;
-      
-      if (userCertificationGoal) {
-        const certSpecificQuestions = certificationQuestions.filter(question => 
-          question.certifications.includes(userCertificationGoal)
-        );
-        
-        // Use certification-specific questions if available, otherwise use all questions
-        if (certSpecificQuestions.length > 0) {
-          filteredQuestions = certSpecificQuestions;
+    async function loadQuestions() {
+      if (subscriptionStatus !== null && user && userCertificationGoal) {
+        setIsLoadingQuestions(true);
+        try {
+          // For free users, limit to 5 questions. For Pro users, get more variety
+          const maxQuestions = subscriptionStatus === 'active' ? 15 : 5;
+          
+          const result = await getAdaptiveQuestions(
+            user.id,
+            userCertificationGoal,
+            maxQuestions
+          );
+          
+          if (result.success && result.questions) {
+            setAvailableQuestions(result.questions);
+          } else {
+            console.error('Error loading questions:', result.error);
+            setAvailableQuestions([]);
+          }
+        } catch (error) {
+          console.error('Error loading questions:', error);
+          setAvailableQuestions([]);
+        } finally {
+          setIsLoadingQuestions(false);
         }
       }
-      
-      // For free users, limit to 5 questions. For Pro users, use more variety
-      const maxQuestions = subscriptionStatus === 'active' ? filteredQuestions.length : Math.min(5, filteredQuestions.length);
-      
-      // Shuffle questions to provide variety
-      const shuffled = [...filteredQuestions].sort(() => Math.random() - 0.5);
-      
-      // Update the available questions for this session
-      setAvailableQuestions(shuffled.slice(0, maxQuestions));
     }
-  }, [subscriptionStatus, userCertificationGoal]);
+    
+    loadQuestions();
+  }, [subscriptionStatus, userCertificationGoal, user]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -94,10 +102,26 @@ export default function PracticeSessionPage() {
   };
 
   const handleSubmitAnswer = () => {
-    if (selectedAnswer === null) return;
+    if (selectedAnswer === null || !currentQ?.answer_choices) return;
     
     setAnswers([...answers, selectedAnswer]);
     setShowExplanation(true);
+    
+    // Record the attempt in the database
+    if (user) {
+      const isCorrect = currentQ.answer_choices[selectedAnswer]?.is_correct || false;
+      const attempt: QuestionAttempt = {
+        question_id: currentQ.id,
+        selected_answer_id: currentQ.answer_choices[selectedAnswer]?.id || '',
+        is_correct: isCorrect,
+        time_spent_seconds: 0, // We could track this later
+        confidence_level: confidence || 3 // Default to 3 if not set
+      };
+      
+      recordQuestionAttempt(user.id, sessionId, attempt).catch((error: Error) => {
+        console.error('Error recording question attempt:', error);
+      });
+    }
   };
 
   const handleNextQuestion = () => {
@@ -126,7 +150,7 @@ export default function PracticeSessionPage() {
     return 'text-orange-600';
   };
 
-  if (loading) {
+  if (loading || isLoadingQuestions) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50 flex items-center justify-center">
         <div className="text-center">
@@ -275,7 +299,14 @@ export default function PracticeSessionPage() {
   }
 
   const currentQ = availableQuestions[currentQuestion];
-  const score = Math.round((answers.filter((answer, index) => answer === availableQuestions[index].correct).length / answers.length) * 100);
+  
+  // Calculate score based on correct answers
+  const score = Math.round((answers.filter((answer, index) => {
+    const question = availableQuestions[index];
+    const selectedChoice = question?.answer_choices?.[answer];
+    return selectedChoice?.is_correct || false;
+  }).length / answers.length) * 100);
+  
   const isFreePlan = subscriptionStatus !== 'active';
 
   if (sessionComplete) {
@@ -442,7 +473,7 @@ export default function PracticeSessionPage() {
                 </div>
               </div>
               <div className="text-sm text-green-600">
-                Topic: <span className="font-medium">{currentQ.topic}</span>
+                Topic: <span className="font-medium">{currentQ.topic?.name || 'General'}</span>
               </div>
             </div>
           </div>
@@ -452,25 +483,25 @@ export default function PracticeSessionPage() {
             <div className="mb-6">
               <div className="flex items-center justify-between mb-4">
                 <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
-                  {currentQ.difficulty.charAt(0).toUpperCase() + currentQ.difficulty.slice(1)}
+                  {currentQ.difficulty_level.charAt(0).toUpperCase() + currentQ.difficulty_level.slice(1)}
                 </span>
-                <span className="text-green-600 text-sm">{currentQ.topic}</span>
+                <span className="text-green-600 text-sm">{currentQ.topic?.name || 'General'}</span>
               </div>
               
               <h2 className="text-xl text-gray-800 font-medium leading-relaxed">
-                {currentQ.content}
+                {currentQ.question_text}
               </h2>
             </div>
 
             {/* Answer Options */}
             <div className="space-y-3 mb-6">
-              {currentQ.options.map((option: string, index: number) => {
+              {currentQ.answer_choices?.map((choice: AnswerChoice, index: number) => {
                 let buttonClass = "w-full p-4 text-left rounded-xl border-2 transition-all duration-200 ";
                 
                 if (showExplanation) {
-                  if (index === currentQ.correct) {
+                  if (choice.is_correct) {
                     buttonClass += "border-green-500 bg-green-50 text-green-800";
-                  } else if (index === selectedAnswer && index !== currentQ.correct) {
+                  } else if (index === selectedAnswer && !choice.is_correct) {
                     buttonClass += "border-red-500 bg-red-50 text-red-800";
                   } else {
                     buttonClass += "border-gray-300 bg-gray-50 text-gray-600";
@@ -485,13 +516,13 @@ export default function PracticeSessionPage() {
 
                 return (
                   <button
-                    key={index}
+                    key={choice.id}
                     onClick={() => handleAnswerSelect(index)}
                     disabled={showExplanation}
                     className={buttonClass}
                   >
                     <span className="font-medium mr-3">{String.fromCharCode(65 + index)}.</span>
-                    {option}
+                    {choice.choice_text}
                   </button>
                 );
               })}
