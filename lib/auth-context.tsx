@@ -19,21 +19,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    console.log('🔄 Auth initialization starting...')
+    
     // Get initial session using our safe function
     const getInitialUser = async () => {
       try {
+        console.log('📝 Getting initial user...')
         const result = await getCurrentUser()
+        console.log('📝 getCurrentUser result:', result)
+        
         if (result.success && result.user) {
+          console.log('✅ User found:', result.user.email)
           setUser(result.user)
+        } else {
+          console.log('❌ No user or error:', result.error)
         }
       } catch (error) {
-        console.error('Error getting initial user:', error)
+        console.error('❌ Error getting initial user:', error)
       } finally {
+        console.log('🏁 Setting loading to false')
         setLoading(false)
       }
     }
 
     getInitialUser()
+
+    // Safety timeout - if loading takes more than 10 seconds, force loading to false
+    const timeoutId = setTimeout(() => {
+      console.log('⚠️ Loading timeout reached, forcing loading to false')
+      setLoading(false)
+    }, 10000)
+
+    // Cleanup timeout on unmount
+    return () => clearTimeout(timeoutId)
 
     // Set up auth state listener for real-time auth changes
     const setupAuthListener = async () => {
