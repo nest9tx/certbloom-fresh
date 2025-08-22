@@ -40,9 +40,36 @@ export default function AuthConfirmPage() {
           if (data.session) {
             setStatus('success');
             setMessage('Account confirmed successfully! Redirecting to dashboard...');
-            // Force a page reload to trigger auth context update, then redirect
+            
+            // Check if user has a certification goal, if not try to restore from backup
+            try {
+              const { getUserProfile } = await import('../../../../lib/supabase');
+              const profileResult = await getUserProfile(data.session.user.id);
+              
+              if (profileResult.success && (!profileResult.profile?.certification_goal || profileResult.profile.certification_goal === '')) {
+                // Try to restore certification from localStorage backup
+                const pendingCertification = localStorage.getItem('pendingCertification') || localStorage.getItem('selectedCertification');
+                
+                if (pendingCertification) {
+                  console.log('🔄 Restoring certification goal from backup:', pendingCertification);
+                  const { updateUserProfile } = await import('../../../../lib/supabase');
+                  await updateUserProfile(data.session.user.id, {
+                    certification_goal: pendingCertification
+                  });
+                  
+                  // Clear the backup
+                  localStorage.removeItem('pendingCertification');
+                  localStorage.removeItem('selectedCertification');
+                  console.log('✅ Certification goal restored successfully');
+                }
+              }
+            } catch (err) {
+              console.error('⚠️ Error checking/restoring certification goal:', err);
+            }
+            
+            // Use router navigation instead of window.location to preserve React state
             setTimeout(() => {
-              window.location.href = '/dashboard';
+              router.push('/dashboard');
             }, 2000);
           } else {
             setStatus('error');
@@ -69,7 +96,7 @@ export default function AuthConfirmPage() {
             setStatus('success');
             setMessage('Already signed in! Redirecting to dashboard...');
             setTimeout(() => {
-              window.location.href = '/dashboard';
+              router.push('/dashboard');
             }, 1000);
           } else {
             setStatus('error');

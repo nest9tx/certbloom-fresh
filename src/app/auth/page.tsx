@@ -103,6 +103,8 @@ function AuthPageContent() {
           setShowEmailSent(true);
           // Keep certification in localStorage for now - will be used in auth context
           console.log('✅ Signup successful, certification should be saved:', certificationGoal);
+          console.log('💾 Keeping certification in localStorage for post-confirmation recovery');
+          // Don't clear localStorage yet - we'll need it after email confirmation
           // Don't redirect immediately for sign up - user needs to confirm email
         } else {
           setError(result.error || 'Something went wrong');

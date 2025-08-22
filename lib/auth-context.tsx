@@ -120,31 +120,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         console.log('🏗️ Creating user profile for:', email, 'with certification:', certificationGoal)
         const { createUserProfile } = await import('./supabase')
+        
+        // Make sure we have the most current certification goal
+        const finalCertificationGoal = certificationGoal || (typeof window !== 'undefined' ? localStorage.getItem('selectedCertification') : null);
+        
         const profileResult = await createUserProfile(result.user.id, {
           email,
           full_name: fullName,
-          certification_goal: certificationGoal,
+          certification_goal: finalCertificationGoal || undefined,
         })
         
         if (!profileResult.success) {
           console.error('❌ Error creating user profile:', profileResult.error)
           // Store certification in localStorage as backup if profile creation fails
-          if (certificationGoal && typeof window !== 'undefined') {
-            localStorage.setItem('pendingCertification', certificationGoal);
+          if (finalCertificationGoal && typeof window !== 'undefined') {
+            localStorage.setItem('pendingCertification', finalCertificationGoal);
             console.log('💾 Stored certification as backup due to profile creation failure');
           }
         } else {
-          console.log('✅ User profile created successfully for:', email, 'with certification:', certificationGoal)
-          // Clear any pending certification since profile was created successfully
-          if (typeof window !== 'undefined') {
-            localStorage.removeItem('pendingCertification');
+          console.log('✅ User profile created successfully for:', email, 'with certification:', finalCertificationGoal)
+          // Keep certification in localStorage until email confirmation completes
+          if (finalCertificationGoal && typeof window !== 'undefined') {
+            localStorage.setItem('pendingCertification', finalCertificationGoal);
+            console.log('💾 Keeping certification as backup until email confirmation');
           }
         }
       } catch (err) {
         console.error('❌ Exception creating user profile:', err)
         // Store certification in localStorage as backup
-        if (certificationGoal && typeof window !== 'undefined') {
-          localStorage.setItem('pendingCertification', certificationGoal);
+        const finalCertificationGoal = certificationGoal || (typeof window !== 'undefined' ? localStorage.getItem('selectedCertification') : null);
+        if (finalCertificationGoal && typeof window !== 'undefined') {
+          localStorage.setItem('pendingCertification', finalCertificationGoal);
           console.log('💾 Stored certification as backup due to exception');
         }
       }

@@ -52,9 +52,32 @@ export default function DashboardPage() {
         setSubscriptionStatus(status);
         setUserCertificationGoal(certificationGoal);
         
-        // If user doesn't have a certification goal, show them a gentle prompt to select one
+        // If user doesn't have a certification goal, check for pending one and restore it
         if (!certificationGoal) {
-          console.log('⚠️ User has no certification goal, they should select one');
+          console.log('⚠️ User has no certification goal, checking for backup...');
+          
+          const pendingCertification = localStorage.getItem('pendingCertification') || localStorage.getItem('selectedCertification');
+          
+          if (pendingCertification) {
+            console.log('🔄 Found pending certification, restoring:', pendingCertification);
+            try {
+              const { updateUserCertificationGoal } = await import('../../lib/updateUserCertificationGoal');
+              const result = await updateUserCertificationGoal(user.id, pendingCertification);
+              
+              if (result.success) {
+                setUserCertificationGoal(pendingCertification);
+                localStorage.removeItem('pendingCertification');
+                localStorage.removeItem('selectedCertification');
+                console.log('✅ Certification goal restored successfully');
+              } else {
+                console.error('❌ Failed to restore certification goal:', result.error);
+              }
+            } catch (err) {
+              console.error('❌ Exception restoring certification goal:', err);
+            }
+          } else {
+            console.log('💡 No pending certification found, user should select one');
+          }
         }
       }
     }
