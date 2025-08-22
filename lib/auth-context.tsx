@@ -34,6 +34,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     getInitialUser()
+
+    // Set up auth state listener for real-time auth changes
+    const setupAuthListener = async () => {
+      const { supabase } = await import('./supabase')
+      if (supabase) {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+          if (session?.user) {
+            setUser(session.user)
+          } else {
+            setUser(null)
+          }
+          setLoading(false)
+        })
+
+        return () => subscription.unsubscribe()
+      }
+    }
+
+    setupAuthListener()
   }, [])
 
   const signUp = async (email: string, password: string, fullName: string, certificationGoal?: string) => {

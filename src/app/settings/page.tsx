@@ -252,17 +252,18 @@ export default function SettingsPage() {
     setSaveMessage('');
     
     try {
-      const { supabase } = await import('../../lib/supabase');
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ certification_goal: selectedCertification })
-        .eq('id', user.id);
+      const { updateUserCertificationGoal } = await import('../../lib/updateUserCertificationGoal');
+      const result = await updateUserCertificationGoal(user.id, selectedCertification);
       
-      if (error) {
-        setSaveMessage('Error saving changes. Please try again.');
-      } else {
+      if (result.success) {
         setCurrentCertification(selectedCertification);
         setSaveMessage('Certification goal updated successfully! 🎯');
+        // Trigger a refresh of the parent page when navigating back
+        setTimeout(() => {
+          window.history.back();
+        }, 1500);
+      } else {
+        setSaveMessage(result.error || 'Error saving changes. Please try again.');
       }
     } catch {
       setSaveMessage('Error saving changes. Please try again.');

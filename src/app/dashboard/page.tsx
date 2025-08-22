@@ -39,6 +39,33 @@ export default function DashboardPage() {
     fetchUserData();
   }, [user]);
 
+  // Add a focus listener to refresh data when user returns to the dashboard
+  useEffect(() => {
+    const handleFocus = async () => {
+      if (user) {
+        const { getUserCertificationGoal } = await import('../../lib/getUserCertificationGoal');
+        const certificationGoal = await getUserCertificationGoal(user.id);
+        setUserCertificationGoal(certificationGoal);
+      }
+    };
+
+    const handleVisibilityChange = async () => {
+      if (!document.hidden && user) {
+        const { getUserCertificationGoal } = await import('../../lib/getUserCertificationGoal');
+        const certificationGoal = await getUserCertificationGoal(user.id);
+        setUserCertificationGoal(certificationGoal);
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user]);
+
   const moodOptions = [
     { emoji: '😊', label: 'Energized', value: 'energized' },
     { emoji: '😌', label: 'Calm', value: 'calm' },

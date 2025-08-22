@@ -39,10 +39,10 @@ export default function AuthConfirmPage() {
 
           if (data.session) {
             setStatus('success');
-            setMessage('Account confirmed successfully! Redirecting...');
-            // Wait a moment to show success message, then redirect
+            setMessage('Account confirmed successfully! Redirecting to dashboard...');
+            // Force a page reload to trigger auth context update, then redirect
             setTimeout(() => {
-              router.push('/dashboard');
+              window.location.href = '/dashboard';
             }, 2000);
           } else {
             setStatus('error');
@@ -67,9 +67,9 @@ export default function AuthConfirmPage() {
 
           if (data.session) {
             setStatus('success');
-            setMessage('Already signed in! Redirecting...');
+            setMessage('Already signed in! Redirecting to dashboard...');
             setTimeout(() => {
-              router.push('/dashboard');
+              window.location.href = '/dashboard';
             }, 1000);
           } else {
             setStatus('error');
