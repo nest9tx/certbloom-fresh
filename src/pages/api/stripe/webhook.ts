@@ -71,15 +71,47 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).send('Webhook Error: Missing user ID in metadata.');
     }
 
+    // Get subscription details to determine plan and end date
+    let subscriptionPlan = null;
+    let subscriptionEndDate = null;
+    
+    if (stripeSubscriptionId) {
+      try {
+        const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+        const priceId = subscription.items.data[0]?.price.id;
+        
+        // Determine plan based on price ID
+        if (priceId === process.env.STRIPE_MONTHLY_PRICE_ID) {
+          subscriptionPlan = 'monthly';
+        } else if (priceId === process.env.STRIPE_YEARLY_PRICE_ID) {
+          subscriptionPlan = 'yearly';
+        }
+        
+        // Calculate end date from current_period_end (Stripe timestamp is in seconds)
+        if (subscription && 'current_period_end' in subscription) {
+          subscriptionEndDate = new Date((subscription.current_period_end as number) * 1000).toISOString();
+        }
+        
+        console.log('📋 Subscription details:', { subscriptionPlan, subscriptionEndDate });
+      } catch (err) {
+        console.error('Error retrieving subscription details:', err);
+      }
+    }
+
     try {
       console.log('🔄 Updating user profile in database...');
+      const updateData: Record<string, string | boolean> = {
+        subscription_status: 'active',
+        stripe_customer_id: stripeCustomerId,
+        stripe_subscription_id: stripeSubscriptionId,
+      };
+      
+      if (subscriptionPlan) updateData.subscription_plan = subscriptionPlan;
+      if (subscriptionEndDate) updateData.subscription_end_date = subscriptionEndDate;
+      
       const { error } = await supabaseAdmin
         .from('user_profiles') // Make sure this matches your table name
-        .update({
-          subscription_status: 'active',
-          stripe_customer_id: stripeCustomerId,
-          stripe_subscription_id: stripeSubscriptionId,
-        })
+        .update(updateData)
         .eq('id', userId); // Use the user's ID to find the correct profile
 
       if (error) {

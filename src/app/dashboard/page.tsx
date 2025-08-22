@@ -19,6 +19,8 @@ export default function DashboardPage() {
   // Subscription status (mocked for now, replace with Supabase query)
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'canceled' | 'free'>('free');
   const [userCertificationGoal, setUserCertificationGoal] = useState<string | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [loadingPlan, setLoadingPlan] = useState<'monthly' | 'yearly' | null>(null);
 
   // Fetch subscription status from Supabase
   useEffect(() => {
@@ -86,6 +88,57 @@ export default function DashboardPage() {
     router.push('/');
   };
 
+  const handleCheckout = async (plan: 'monthly' | 'yearly') => {
+    if (!user) {
+      alert('Please sign in to choose a plan.');
+      return;
+    }
+
+    setLoadingPlan(plan);
+
+    try {
+      const { supabase } = await import('../../lib/supabase');
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+
+      if (!token) {
+        alert('Your session has expired. Please sign in again.');
+        setLoadingPlan(null);
+        router.push('/auth');
+        return;
+      }
+
+      const res = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ plan }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || 'An unknown error occurred.');
+      }
+
+      if (result.url) {
+        window.location.href = result.url;
+      } else {
+        throw new Error('Error creating checkout session: No URL returned.');
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        alert(`Checkout Error: ${error.message}`);
+      } else {
+        alert('Checkout Error: An unknown error occurred.');
+      }
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50 flex items-center justify-center">
@@ -147,9 +200,12 @@ export default function DashboardPage() {
               <span className="mr-2">🌟</span> Upgraded: Full Access
             </span>
           ) : (
-            <Link href="/pricing" className="inline-flex items-center px-4 py-2 bg-yellow-400 text-green-900 rounded-full text-sm font-semibold shadow-lg hover:bg-yellow-500 transition-colors">
+            <button 
+              onClick={() => setShowUpgradeModal(true)}
+              className="inline-flex items-center px-4 py-2 bg-yellow-400 text-green-900 rounded-full text-sm font-semibold shadow-lg hover:bg-yellow-500 transition-colors"
+            >
               <span className="mr-2">🔒</span> Upgrade for Full Access
-            </Link>
+            </button>
           )}
         </div>
         <div className="max-w-7xl mx-auto">
@@ -441,6 +497,46 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+            <div className="text-center">
+              <div className="text-6xl mb-6">🌟</div>
+              <h3 className="text-2xl font-semibold text-green-800 mb-4">Upgrade to CertBloom Pro</h3>
+              <p className="text-green-600 mb-8">
+                Unlock unlimited practice sessions, detailed explanations, and help fund educational pods!
+              </p>
+              
+              <div className="space-y-4 mb-6">
+                <button
+                  onClick={() => handleCheckout('monthly')}
+                  disabled={loadingPlan !== null}
+                  className="w-full py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-colors font-medium disabled:opacity-50"
+                >
+                  {loadingPlan === 'monthly' ? 'Processing...' : '💳 Monthly Plan - $29/month'}
+                </button>
+                
+                <button
+                  onClick={() => handleCheckout('yearly')}
+                  disabled={loadingPlan !== null}
+                  className="w-full py-3 bg-gradient-to-r from-yellow-400 to-orange-400 text-green-900 rounded-xl hover:from-yellow-500 hover:to-orange-500 transition-colors font-medium disabled:opacity-50"
+                >
+                  {loadingPlan === 'yearly' ? 'Processing...' : '🎯 Yearly Plan - $199/year (Save $149!)'}
+                </button>
+              </div>
+              
+              <button
+                onClick={() => setShowUpgradeModal(false)}
+                className="w-full py-2 text-green-600 hover:text-green-700 transition-colors"
+              >
+                Maybe Later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Breathing Exercise Modal */}
       {showBreathing && (

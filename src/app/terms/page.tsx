@@ -90,7 +90,7 @@ export default function TermsOfServicePage() {
               <ul className="list-disc list-inside text-gray-700 space-y-2 mb-4">
                 <li><strong>Free Plan:</strong> Access to 50 practice questions and basic features</li>
                 <li><strong>Pro Plan:</strong> Unlimited access to all features, questions, and materials</li>
-                <li>Monthly Pro: $25 per month</li>
+                <li>Monthly Pro: $29 per month</li>
                 <li>Yearly Pro: $99 per year (significant savings)</li>
               </ul>
 

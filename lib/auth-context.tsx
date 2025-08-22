@@ -39,9 +39,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const setupAuthListener = async () => {
       const { supabase } = await import('./supabase')
       if (supabase) {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
           if (session?.user) {
             setUser(session.user)
+            
+            // Check if user profile exists, create if it doesn't
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+              try {
+                const { getUserProfile, createUserProfile } = await import('./supabase')
+                const profileResult = await getUserProfile(session.user.id)
+                
+                if (!profileResult.success) {
+                  // Profile doesn't exist, create it
+                  console.log('Creating missing user profile for:', session.user.email)
+                  await createUserProfile(session.user.id, {
+                    email: session.user.email || '',
+                    full_name: session.user.user_metadata?.full_name || '',
+                  })
+                }
+              } catch (err) {
+                console.error('Error checking/creating user profile:', err)
+              }
+            }
           } else {
             setUser(null)
           }
@@ -64,11 +83,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Create user profile in user_profiles table
       try {
         const { createUserProfile } = await import('./supabase')
-        await createUserProfile(result.user.id, {
+        const profileResult = await createUserProfile(result.user.id, {
           email,
           full_name: fullName,
           certification_goal: certificationGoal,
         })
+        
+        if (!profileResult.success) {
+          console.error('Error creating user profile:', profileResult.error)
+          // Still return success for signup, but log the profile creation error
+        } else {
+          console.log('User profile created successfully for:', email)
+        }
       } catch (err) {
         console.error('Error creating user profile:', err)
       }
