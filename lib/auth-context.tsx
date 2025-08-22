@@ -51,14 +51,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 
                 if (!profileResult.success) {
                   // Profile doesn't exist, create it
-                  console.log('Creating missing user profile for:', session.user.email)
+                  console.log('🏗️ Creating missing user profile for:', session.user.email)
+                  
+                  // Try to get certification from localStorage if available
+                  const storedCertification = typeof window !== 'undefined' 
+                    ? localStorage.getItem('selectedCertification') 
+                    : null;
+                  
                   await createUserProfile(session.user.id, {
                     email: session.user.email || '',
                     full_name: session.user.user_metadata?.full_name || '',
+                    certification_goal: storedCertification || undefined,
                   })
+                  
+                  // Clear the stored certification after using it
+                  if (storedCertification && typeof window !== 'undefined') {
+                    localStorage.removeItem('selectedCertification');
+                    console.log('✅ Used stored certification in profile creation:', storedCertification);
+                  }
+                } else {
+                  console.log('✅ User profile already exists for:', session.user.email);
                 }
               } catch (err) {
-                console.error('Error checking/creating user profile:', err)
+                console.error('❌ Error checking/creating user profile:', err)
               }
             }
           } else {

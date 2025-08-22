@@ -48,8 +48,14 @@ export default function DashboardPage() {
           getUserCertificationGoal(user.id)
         ]);
         
+        console.log('📋 Fetched user data:', { status, certificationGoal });
         setSubscriptionStatus(status);
         setUserCertificationGoal(certificationGoal);
+        
+        // If user doesn't have a certification goal, show them a gentle prompt to select one
+        if (!certificationGoal) {
+          console.log('⚠️ User has no certification goal, they should select one');
+        }
       }
     }
     fetchUserData();

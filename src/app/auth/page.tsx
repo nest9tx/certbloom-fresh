@@ -49,6 +49,22 @@ function AuthPageContent() {
     }
   }, [searchParams]);
 
+  // Check for certification selection when user tries to sign up
+  useEffect(() => {
+    if (isSignUp && !selectedCertification) {
+      // If user is trying to sign up but hasn't selected a certification,
+      // redirect them to certification selection
+      const currentUrl = new URL(window.location.href);
+      const hasError = currentUrl.searchParams.has('error');
+      
+      // Only redirect if there's no error (to avoid redirect loops)
+      if (!hasError) {
+        console.log('⚠️ User trying to signup without certification, redirecting...');
+        router.push('/select-certification');
+      }
+    }
+  }, [isSignUp, selectedCertification, router]);
+
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
@@ -63,11 +79,15 @@ function AuthPageContent() {
 
     try {
       if (isSignUp) {
+        console.log('🚀 Starting signup with certification:', selectedCertification);
         const result = await signUp(email, password, fullName, selectedCertification || undefined);
+        console.log('📋 Signup result:', result);
+        
         if (result.success) {
           setShowEmailSent(true);
           // Clear stored certification after successful signup
           localStorage.removeItem('selectedCertification');
+          console.log('✅ Signup successful, certification should be saved');
           // Don't redirect immediately for sign up - user needs to confirm email
         } else {
           setError(result.error || 'Something went wrong');
