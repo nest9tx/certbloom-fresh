@@ -2,10 +2,67 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../lib/auth-context';
 
 export default function PricingPage() {
   const { user, signOut } = useAuth();
+  const router = useRouter();
+  const [loadingPlan, setLoadingPlan] = useState<'monthly' | 'yearly' | null>(null);
+
+  const handleCheckout = async (plan: 'monthly' | 'yearly') => {
+    if (!user) {
+      alert('Please sign in to choose a plan.');
+      router.push('/auth');
+      return;
+    }
+
+    setLoadingPlan(plan);
+
+    try {
+      const { supabase } = await import('../../lib/supabase');
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+
+      if (!token) {
+        alert('Your session has expired. Please sign in again.');
+        setLoadingPlan(null);
+        router.push('/auth');
+        return;
+      }
+
+      const res = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ plan }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || `API Error: ${res.status} ${res.statusText}`);
+      }
+
+      if (result.url) {
+        window.location.href = result.url;
+      } else {
+        throw new Error('Error creating checkout session: No URL returned.');
+      }
+    } catch (error: unknown) {
+      console.error('Checkout error:', error);
+      if (error instanceof Error) {
+        alert(`Checkout Error: ${error.message}`);
+      } else {
+        alert('Checkout Error: An unknown error occurred.');
+      }
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50">
@@ -167,13 +224,21 @@ export default function PricingPage() {
               </div>
 
               {user ? (
-                <div className="text-center">
-                  <Link
-                    href="/dashboard"
-                    className="block px-8 py-3 bg-gradient-to-r from-yellow-400 to-orange-400 text-green-900 rounded-xl hover:from-yellow-500 hover:to-orange-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium"
+                <div className="text-center space-y-3">
+                  <button
+                    onClick={() => handleCheckout('monthly')}
+                    disabled={loadingPlan !== null}
+                    className="block w-full px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium disabled:opacity-50"
                   >
-                    Upgrade in Dashboard
-                  </Link>
+                    {loadingPlan === 'monthly' ? 'Processing...' : '💳 Subscribe Monthly - $29/month'}
+                  </button>
+                  <button
+                    onClick={() => handleCheckout('yearly')}
+                    disabled={loadingPlan !== null}
+                    className="block w-full px-8 py-3 bg-gradient-to-r from-yellow-400 to-orange-400 text-green-900 rounded-xl hover:from-yellow-500 hover:to-orange-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium disabled:opacity-50"
+                  >
+                    {loadingPlan === 'yearly' ? 'Processing...' : '🎯 Subscribe Yearly - $199/year (Save $149!)'}
+                  </button>
                 </div>
               ) : (
                 <div className="text-center">

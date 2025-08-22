@@ -10,7 +10,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Check required environment variables
+  if (!process.env.STRIPE_SECRET_KEY) {
+    console.error('Missing STRIPE_SECRET_KEY environment variable');
+    return res.status(500).json({ error: 'Stripe configuration error: Missing secret key' });
+  }
+  
+  if (!process.env.STRIPE_MONTHLY_PRICE_ID) {
+    console.error('Missing STRIPE_MONTHLY_PRICE_ID environment variable');
+    return res.status(500).json({ error: 'Stripe configuration error: Missing monthly price ID' });
+  }
+  
+  if (!process.env.STRIPE_YEARLY_PRICE_ID) {
+    console.error('Missing STRIPE_YEARLY_PRICE_ID environment variable');
+    return res.status(500).json({ error: 'Stripe configuration error: Missing yearly price ID' });
+  }
+
   const { plan } = req.body; // 'monthly' or 'yearly'
+  
+  console.log('🚀 Starting checkout session creation for plan:', plan);
+  
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     console.error('Missing or invalid authorization header:', authHeader);
@@ -173,13 +192,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Set price ID based on plan
   let priceId = '';
+  console.log('🏷️ Setting price ID for plan:', plan);
+  
   if (plan === 'monthly') {
     priceId = process.env.STRIPE_MONTHLY_PRICE_ID!;
+    console.log('💳 Monthly price ID:', priceId);
   } else if (plan === 'yearly') {
     priceId = process.env.STRIPE_YEARLY_PRICE_ID!;
+    console.log('💳 Yearly price ID:', priceId);
   } else {
-    console.error('Invalid plan type:', plan);
-    return res.status(400).json({ error: 'Invalid plan type' });
+    console.error('❌ Invalid plan type:', plan);
+    return res.status(400).json({ error: `Invalid plan type: ${plan}. Must be 'monthly' or 'yearly'.` });
+  }
+  
+  if (!priceId) {
+    console.error('❌ Price ID is empty for plan:', plan);
+    return res.status(500).json({ error: `Price ID not configured for plan: ${plan}` });
   }
 
   // Get base URL with fallback

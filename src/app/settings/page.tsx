@@ -252,20 +252,29 @@ export default function SettingsPage() {
     setSaveMessage('');
     
     try {
+      console.log('💾 Saving certification goal:', selectedCertification);
       const { updateUserCertificationGoal } = await import('../../lib/updateUserCertificationGoal');
       const result = await updateUserCertificationGoal(user.id, selectedCertification);
       
       if (result.success) {
         setCurrentCertification(selectedCertification);
         setSaveMessage('Certification goal updated successfully! 🎯');
-        // Trigger a refresh of the parent page when navigating back
+        
+        // Trigger dashboard refresh via storage event
+        localStorage.setItem('certificationUpdated', Date.now().toString());
+        
+        console.log('✅ Certification goal saved successfully');
+        
+        // Navigate back after a short delay
         setTimeout(() => {
           window.history.back();
         }, 1500);
       } else {
+        console.error('❌ Error saving certification:', result.error);
         setSaveMessage(result.error || 'Error saving changes. Please try again.');
       }
-    } catch {
+    } catch (error) {
+      console.error('❌ Exception saving certification:', error);
       setSaveMessage('Error saving changes. Please try again.');
     } finally {
       setSaving(false);
