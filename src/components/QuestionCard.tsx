@@ -1,5 +1,5 @@
 import React from 'react';
-import { Question, AnswerChoice } from '../lib/questionBankWorking';
+import { Question, AnswerChoice } from '../lib/questionBank';
 
 interface QuestionCardProps {
   question: Question;

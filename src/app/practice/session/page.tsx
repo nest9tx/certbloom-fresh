@@ -5,8 +5,8 @@ import { useAuth } from '../../../../lib/auth-context';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getAdaptiveQuestions, recordQuestionAttempt } from '@/lib/questionBankWorking';
-import type { Question, QuestionAttempt, AnswerChoice } from '@/lib/questionBankWorking';
+import { getAdaptiveQuestions, recordQuestionAttempt } from '@/lib/questionBank';
+import type { Question, QuestionAttempt, AnswerChoice } from '@/lib/questionBank';
 
 export default function PracticeSessionPage() {
   const { user, loading } = useAuth();
