@@ -19,7 +19,7 @@ function AuthPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Get certification from URL params or localStorage
+  // Get certification from URL params or localStorage and set signup mode
   useEffect(() => {
     const certificationParam = searchParams?.get('certification');
     const storedCertification = localStorage.getItem('selectedCertification');
@@ -27,8 +27,14 @@ function AuthPageContent() {
     if (certificationParam) {
       setSelectedCertification(certificationParam);
       localStorage.setItem('selectedCertification', certificationParam);
+      // If they came from certification selection, default to signup mode
+      setIsSignUp(true);
+      console.log('🎯 User coming from certification selection, defaulting to signup mode');
     } else if (storedCertification) {
       setSelectedCertification(storedCertification);
+      // If there's a stored certification, they likely want to signup
+      setIsSignUp(true);
+      console.log('📋 Found stored certification, defaulting to signup mode');
     }
   }, [searchParams]);
 
@@ -80,14 +86,23 @@ function AuthPageContent() {
     try {
       if (isSignUp) {
         console.log('🚀 Starting signup with certification:', selectedCertification);
-        const result = await signUp(email, password, fullName, selectedCertification || undefined);
+        
+        // Ensure we have the certification goal before signup
+        const certificationGoal = selectedCertification || localStorage.getItem('selectedCertification');
+        
+        if (!certificationGoal) {
+          setError('Please select a certification first. Redirecting...');
+          setTimeout(() => router.push('/select-certification'), 2000);
+          return;
+        }
+        
+        const result = await signUp(email, password, fullName, certificationGoal);
         console.log('📋 Signup result:', result);
         
         if (result.success) {
           setShowEmailSent(true);
-          // Clear stored certification after successful signup
-          localStorage.removeItem('selectedCertification');
-          console.log('✅ Signup successful, certification should be saved');
+          // Keep certification in localStorage for now - will be used in auth context
+          console.log('✅ Signup successful, certification should be saved:', certificationGoal);
           // Don't redirect immediately for sign up - user needs to confirm email
         } else {
           setError(result.error || 'Something went wrong');

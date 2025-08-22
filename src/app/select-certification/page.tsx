@@ -335,7 +335,7 @@ export default function SelectCertificationPage() {
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              {selectedCertification ? '🚀 Create My Study Program' : 'Select a Certification to Continue'}
+              {selectedCertification ? '🚀 Start Learning - Sign Up' : 'Select a Certification to Continue'}
             </button>
 
             {selectedCertification && (

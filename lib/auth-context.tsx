@@ -53,9 +53,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   // Profile doesn't exist, create it
                   console.log('🏗️ Creating missing user profile for:', session.user.email)
                   
-                  // Try to get certification from localStorage if available
+                  // Try to get certification from multiple sources
                   const storedCertification = typeof window !== 'undefined' 
-                    ? localStorage.getItem('selectedCertification') 
+                    ? localStorage.getItem('selectedCertification') || localStorage.getItem('pendingCertification')
                     : null;
                   
                   await createUserProfile(session.user.id, {
@@ -67,10 +67,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   // Clear the stored certification after using it
                   if (storedCertification && typeof window !== 'undefined') {
                     localStorage.removeItem('selectedCertification');
+                    localStorage.removeItem('pendingCertification');
                     console.log('✅ Used stored certification in profile creation:', storedCertification);
                   }
                 } else {
                   console.log('✅ User profile already exists for:', session.user.email);
+                  
+                  // Check if we have a pending certification to update existing profile
+                  const pendingCertification = typeof window !== 'undefined' 
+                    ? localStorage.getItem('pendingCertification') || localStorage.getItem('selectedCertification')
+                    : null;
+                  
+                  if (pendingCertification && (!profileResult.profile?.certification_goal || profileResult.profile.certification_goal === '')) {
+                    console.log('🔄 Updating existing profile with pending certification:', pendingCertification);
+                    const { updateUserProfile } = await import('./supabase');
+                    await updateUserProfile(session.user.id, {
+                      certification_goal: pendingCertification
+                    });
+                    
+                    // Clear pending certifications
+                    localStorage.removeItem('selectedCertification');
+                    localStorage.removeItem('pendingCertification');
+                    console.log('✅ Updated existing profile with certification:', pendingCertification);
+                  }
                 }
               } catch (err) {
                 console.error('❌ Error checking/creating user profile:', err)
@@ -90,6 +109,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signUp = async (email: string, password: string, fullName: string, certificationGoal?: string) => {
+    console.log('🔐 Auth context signup called with certification:', certificationGoal);
+    
     const result = await supabaseSignUp(email, password, fullName)
     if (result.success && result.user) {
       // Don't set user state immediately - wait for email confirmation
@@ -107,12 +128,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (!profileResult.success) {
           console.error('❌ Error creating user profile:', profileResult.error)
-          // Still return success for signup, but log the profile creation error
+          // Store certification in localStorage as backup if profile creation fails
+          if (certificationGoal && typeof window !== 'undefined') {
+            localStorage.setItem('pendingCertification', certificationGoal);
+            console.log('💾 Stored certification as backup due to profile creation failure');
+          }
         } else {
           console.log('✅ User profile created successfully for:', email, 'with certification:', certificationGoal)
+          // Clear any pending certification since profile was created successfully
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('pendingCertification');
+          }
         }
       } catch (err) {
         console.error('❌ Exception creating user profile:', err)
+        // Store certification in localStorage as backup
+        if (certificationGoal && typeof window !== 'undefined') {
+          localStorage.setItem('pendingCertification', certificationGoal);
+          console.log('💾 Stored certification as backup due to exception');
+        }
       }
     }
     return result
