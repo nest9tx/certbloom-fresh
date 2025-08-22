@@ -82,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Create user profile in user_profiles table
       try {
+        console.log('🏗️ Creating user profile for:', email, 'with certification:', certificationGoal)
         const { createUserProfile } = await import('./supabase')
         const profileResult = await createUserProfile(result.user.id, {
           email,
@@ -90,13 +91,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
         
         if (!profileResult.success) {
-          console.error('Error creating user profile:', profileResult.error)
+          console.error('❌ Error creating user profile:', profileResult.error)
           // Still return success for signup, but log the profile creation error
         } else {
-          console.log('User profile created successfully for:', email)
+          console.log('✅ User profile created successfully for:', email, 'with certification:', certificationGoal)
         }
       } catch (err) {
-        console.error('Error creating user profile:', err)
+        console.error('❌ Exception creating user profile:', err)
       }
     }
     return result
@@ -111,11 +112,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signOut = async () => {
-    const result = await supabaseSignOut()
-    if (result.success) {
-      setUser(null)
+    console.log('🚪 Starting sign out process...')
+    try {
+      const result = await supabaseSignOut()
+      console.log('🔑 Supabase sign out result:', result)
+      
+      if (result.success) {
+        setUser(null)
+        console.log('✅ User state cleared, sign out successful')
+      } else {
+        console.error('❌ Sign out failed:', result.error)
+      }
+      return result
+    } catch (error) {
+      console.error('❌ Sign out exception:', error)
+      return { success: false, error: 'An unexpected error occurred during sign out' }
     }
-    return result
   }
 
   const value = {

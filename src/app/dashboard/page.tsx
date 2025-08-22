@@ -16,9 +16,25 @@ export default function DashboardPage() {
   const [studyStreak] = useState(3);
   const [weeklyGoal] = useState(75);
   const [currentProgress] = useState(42);
-  // Subscription status (mocked for now, replace with Supabase query)
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'canceled' | 'free'>('free');
   const [userCertificationGoal, setUserCertificationGoal] = useState<string | null>(null);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+
+  // Check for success parameter from URL (client-side only)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const success = urlParams.get('success');
+      if (success === 'true') {
+        setShowSuccessMessage(true);
+        // Remove the success parameter from URL
+        const newUrl = window.location.pathname;
+        router.replace(newUrl);
+        // Hide success message after 5 seconds
+        setTimeout(() => setShowSuccessMessage(false), 5000);
+      }
+    }
+  }, [router]);
 
   // Fetch subscription status from Supabase
   useEffect(() => {
@@ -108,14 +124,24 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!loading && !user) {
+      console.log('🔐 No user found, redirecting to auth');
       router.push('/auth');
     }
   }, [user, loading, router]);
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
-    await signOut();
-    router.push('/');
+    console.log('🚪 Starting sign out from dashboard...');
+    
+    try {
+      await signOut();
+      console.log('✅ Sign out completed, redirecting to home');
+      router.push('/');
+    } catch (error) {
+      console.error('❌ Sign out error:', error);
+    } finally {
+      setIsSigningOut(false);
+    }
   };
 
   if (loading) {
@@ -172,6 +198,13 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <div className="relative z-10 container mx-auto px-6 py-8">
+        {/* Success Message */}
+        {showSuccessMessage && (
+          <div className="fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-pulse">
+            🎉 Upgrade successful! Welcome to CertBloom Pro!
+          </div>
+        )}
+        
         {/* Subscription Badge/Button */}
         <div className="flex justify-end mb-4">
           {subscriptionStatus === 'active' ? (
