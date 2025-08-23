@@ -113,8 +113,18 @@ export default function PracticeSessionPage() {
               setAvailableQuestions([]);
             }
           } else {
-            // Use URL-specified session length or defaults
-            const effectiveLength = sessionLength || (subscriptionStatus === 'active' ? 15 : 5);
+            // Use URL-specified session length or defaults based on subscription
+            const baseLength = sessionLength || (subscriptionStatus === 'active' ? 15 : 5);
+            // For free users, ALWAYS enforce 5 question limit regardless of URL params
+            const effectiveLength = subscriptionStatus === 'free' ? Math.min(baseLength, 5) : baseLength;
+            
+            console.log('🎯 Loading questions with settings:', {
+              sessionType,
+              sessionLength,
+              subscriptionStatus,
+              baseLength,
+              effectiveLength
+            });
             
             const result = await getRandomizedAdaptiveQuestions(
               user.id,
@@ -123,7 +133,18 @@ export default function PracticeSessionPage() {
             );
             
             if (result.success && result.questions) {
-              setAvailableQuestions(result.questions);
+              // For free users, double-check and slice to 5 questions max
+              const finalQuestions = subscriptionStatus === 'free' 
+                ? result.questions.slice(0, 5) 
+                : result.questions;
+              
+              setAvailableQuestions(finalQuestions);
+              console.log('✅ Questions loaded:', {
+                requested: effectiveLength,
+                received: result.questions.length,
+                final: finalQuestions.length,
+                subscription: subscriptionStatus
+              });
             } else {
               console.error('Error loading questions');
               setAvailableQuestions([]);
@@ -139,7 +160,7 @@ export default function PracticeSessionPage() {
     }
     
     loadQuestions();
-  }, [subscriptionStatus, userCertificationGoal, user, adaptiveSession, sessionLength]);
+  }, [subscriptionStatus, userCertificationGoal, user, adaptiveSession, sessionLength, sessionType]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -190,6 +211,43 @@ export default function PracticeSessionPage() {
         const newCount = dailySessionCount + 1;
         localStorage.setItem(sessionKey, newCount.toString());
         setDailySessionCount(newCount);
+      }
+      
+      // Save session data to database
+      if (user) {
+        const correctCount = answers.filter((answer, index) => {
+          const question = availableQuestions[index];
+          const selectedChoice = question?.answer_choices?.[answer];
+          return selectedChoice?.is_correct || false;
+        }).length;
+        
+        // Save session asynchronously (don't wait for it)
+        const saveSession = async () => {
+          try {
+            const { supabase } = await import('../../../lib/supabase');
+            await supabase
+              .from('practice_sessions')
+              .insert([
+                {
+                  user_id: user.id,
+                  session_id: sessionId,
+                  certification_name: userCertificationGoal || 'Unknown',
+                  session_type: sessionType,
+                  session_length: availableQuestions.length,
+                  questions_attempted: answers.length,
+                  questions_correct: correctCount,
+                  mood: selectedMood,
+                  completed_at: new Date().toISOString()
+                }
+              ]);
+            
+            console.log('✅ Session data saved to database');
+          } catch (error) {
+            console.error('❌ Error saving session data:', error);
+          }
+        };
+        
+        saveSession();
       }
       
       // Signal mandala to refresh on dashboard

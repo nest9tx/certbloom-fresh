@@ -24,13 +24,13 @@ export async function getRandomizedAdaptiveQuestions(
     
     console.log('✅ Database connectivity OK, found certifications:', testData?.length || 0);
     
-    // Try the new randomized function
+    // Try the new randomized function with longer exclusion window
     const { data, error } = await supabase
       .rpc('get_randomized_adaptive_questions', {
         session_user_id: userId,
         certification_name: certification,
         session_length: limit,
-        exclude_recent_hours: 2
+        exclude_recent_hours: 24 // Exclude questions from last 24 hours for better variety
       });
 
     if (error) {
@@ -40,8 +40,23 @@ export async function getRandomizedAdaptiveQuestions(
     }
 
     if (!data || data.length === 0) {
-      console.log('📭 No randomized questions returned, trying fallback');
-      return getAdaptiveQuestions(userId, certification, limit);
+      console.log('📭 No randomized questions returned, trying with shorter exclusion');
+      // Try again with shorter exclusion if no questions found
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .rpc('get_randomized_adaptive_questions', {
+          session_user_id: userId,
+          certification_name: certification,
+          session_length: limit,
+          exclude_recent_hours: 1 // Just exclude last hour as minimal exclusion
+        });
+      
+      if (fallbackError || !fallbackData || fallbackData.length === 0) {
+        console.log('📭 Still no questions, using standard fallback');
+        return getAdaptiveQuestions(userId, certification, limit);
+      }
+      
+      console.log('✅ Fallback randomized questions found:', fallbackData.length);
+      return { success: true, questions: fallbackData };
     }
 
     console.log('✅ Randomized questions found:', data.length);
