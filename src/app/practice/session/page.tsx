@@ -5,7 +5,7 @@ import { useAuth } from '../../../../lib/auth-context';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getAdaptiveQuestions, recordQuestionAttempt } from '@/lib/questionBank';
+import { getRandomizedAdaptiveQuestions, recordQuestionAttempt } from '@/lib/randomizedQuestions';
 import type { Question, QuestionAttempt, AnswerChoice } from '@/lib/questionBank';
 import MoodSelector from '@/components/MoodSelector';
 import { buildAdaptiveSession, getWisdomWhisper } from '@/lib/adaptiveLearning';
@@ -100,7 +100,7 @@ export default function PracticeSessionPage() {
           // If we have an adaptive session, we still need to get full question data
           if (adaptiveSession && adaptiveSession.review_questions.length > 0) {
             // For adaptive sessions, get questions normally but limit to session length
-            const result = await getAdaptiveQuestions(
+            const result = await getRandomizedAdaptiveQuestions(
               user.id,
               userCertificationGoal,
               Math.min(sessionLength, adaptiveSession.review_questions.length + adaptiveSession.new_questions.length)
@@ -109,14 +109,14 @@ export default function PracticeSessionPage() {
             if (result.success && result.questions) {
               setAvailableQuestions(result.questions);
             } else {
-              console.error('Error loading adaptive session questions:', result.error);
+              console.error('Error loading adaptive session questions');
               setAvailableQuestions([]);
             }
           } else {
             // Use URL-specified session length or defaults
             const effectiveLength = sessionLength || (subscriptionStatus === 'active' ? 15 : 5);
             
-            const result = await getAdaptiveQuestions(
+            const result = await getRandomizedAdaptiveQuestions(
               user.id,
               userCertificationGoal,
               effectiveLength
@@ -125,7 +125,7 @@ export default function PracticeSessionPage() {
             if (result.success && result.questions) {
               setAvailableQuestions(result.questions);
             } else {
-              console.error('Error loading questions:', result.error);
+              console.error('Error loading questions');
               setAvailableQuestions([]);
             }
           }

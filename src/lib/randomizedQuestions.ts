@@ -1,63 +1,60 @@
 import { supabase } from './supabase';
+import { getAdaptiveQuestions, recordQuestionAttempt } from './questionBank';
 
-// Enhanced function to use the new database randomization
+// Simple function to use the new database randomization
 export async function getRandomizedAdaptiveQuestions(
   userId: string, 
   certification: string, 
-  limit: number = 10,
-  excludeRecentHours: number = 2
+  limit: number = 10
 ) {
   try {
+    console.log('Attempting randomized questions for:', { userId, certification, limit });
+    
     const { data, error } = await supabase
       .rpc('get_randomized_adaptive_questions', {
         session_user_id: userId,
         certification_name: certification,
         session_length: limit,
-        exclude_recent_hours: excludeRecentHours
+        exclude_recent_hours: 2
       });
 
     if (error) {
-      console.error('Error fetching randomized questions:', error);
-      // Fallback to original function if new one fails
+      console.error('Randomized function error:', error);
+      // Fallback to original function
       return getAdaptiveQuestions(userId, certification, limit);
     }
 
-    // Transform the data to include answer_choices
-    if (data && data.length > 0) {
-      const questionIds = data.map((q: any) => q.id);
-      
-      // Fetch answer choices for these questions
-      const { data: choices, error: choicesError } = await supabase
-        .from('answer_choices')
-        .select('*')
-        .in('question_id', questionIds)
-        .order('choice_order');
-
-      if (choicesError) {
-        console.error('Error fetching answer choices:', choicesError);
-        return { success: false, error: choicesError.message };
-      }
-
-      // Attach answer choices to questions
-      const questionsWithChoices = data.map((q: any) => ({
-        ...q,
-        topic: {
-          name: q.topic_name,
-          description: q.topic_description
-        },
-        answer_choices: choices?.filter(c => c.question_id === q.id) || []
-      }));
-
-      return { success: true, questions: questionsWithChoices };
+    if (!data || data.length === 0) {
+      console.log('No randomized questions returned, falling back to original');
+      return getAdaptiveQuestions(userId, certification, limit);
     }
 
-    return { success: true, questions: [] };
+    console.log('Randomized questions found:', data.length);
+    
+    // Fetch answer choices for the questions
+    const questionIds = data.map((q: { id: number }) => q.id);
+    const { data: choices } = await supabase
+      .from('answer_choices')
+      .select('*')
+      .in('question_id', questionIds)
+      .order('choice_order');
+
+    // Transform to match expected format
+    const questionsWithChoices = data.map((q: { id: number; topic_name: string; topic_description: string }) => ({
+      ...q,
+      topic: {
+        name: q.topic_name,
+        description: q.topic_description
+      },
+      answer_choices: choices?.filter(c => c.question_id === q.id) || []
+    }));
+
+    return { success: true, questions: questionsWithChoices };
   } catch (err) {
     console.error('Exception in randomized questions:', err);
-    // Fallback to original function
     return getAdaptiveQuestions(userId, certification, limit);
   }
 }
 
-// Re-export existing functions for backward compatibility
-export * from './questionBank';
+// Re-export for convenience
+export { recordQuestionAttempt };
