@@ -36,6 +36,19 @@ if (process.env.NODE_ENV === 'development') {
 // Create the client with validated values
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
+// Service role client for admin operations (bypasses RLS) 
+const rawServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabaseServiceKey = rawServiceKey && rawServiceKey.length > 10 
+  ? rawServiceKey 
+  : 'placeholder-service-key'
+
+export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+})
+
 // Types for our application
 export interface UserProfile {
   id: string
@@ -152,7 +165,10 @@ export async function getCurrentUser() {
 // Profile Functions
 export async function createUserProfile(userId: string, profileData: Partial<UserProfile>) {
   try {
-    const { data, error } = await supabase
+    console.log('🏗️ Creating user profile with admin client for:', userId, profileData);
+    
+    // Use admin client to bypass RLS for initial profile creation
+    const { data, error } = await supabaseAdmin
       .from('user_profiles')
       .insert([
         {
@@ -165,12 +181,14 @@ export async function createUserProfile(userId: string, profileData: Partial<Use
       .select()
 
     if (error) {
+      console.error('❌ Error creating user profile:', error);
       return { success: false, error: error.message }
     }
 
+    console.log('✅ User profile created successfully:', data[0]);
     return { success: true, data: data[0] }
   } catch (err) {
-    console.error('Create user profile error:', err)
+    console.error('❌ Exception creating user profile:', err)
     return { success: false, error: 'An unexpected error occurred' }
   }
 }

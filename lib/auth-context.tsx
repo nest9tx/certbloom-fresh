@@ -68,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 const profileResult = await getUserProfile(session.user.id)
                 
                 if (!profileResult.success) {
-                  // Profile doesn't exist, create it
+                  // Profile doesn't exist, create it using admin privileges
                   console.log('🏗️ Creating missing user profile for:', session.user.email)
                   
                   // Try to get certification from multiple sources
@@ -76,17 +76,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     ? localStorage.getItem('selectedCertification') || localStorage.getItem('pendingCertification')
                     : null;
                   
-                  await createUserProfile(session.user.id, {
+                  const createResult = await createUserProfile(session.user.id, {
                     email: session.user.email || '',
                     full_name: session.user.user_metadata?.full_name || '',
                     certification_goal: storedCertification || undefined,
                   })
                   
-                  // Clear the stored certification after using it
-                  if (storedCertification && typeof window !== 'undefined') {
-                    localStorage.removeItem('selectedCertification');
-                    localStorage.removeItem('pendingCertification');
-                    console.log('✅ Used stored certification in profile creation:', storedCertification);
+                  if (createResult.success) {
+                    console.log('✅ User profile created successfully during sign-in')
+                    // Clear the stored certification after using it
+                    if (storedCertification && typeof window !== 'undefined') {
+                      localStorage.removeItem('selectedCertification');
+                      localStorage.removeItem('pendingCertification');
+                      console.log('✅ Used stored certification in profile creation:', storedCertification);
+                    }
+                  } else {
+                    console.error('❌ Failed to create user profile during sign-in:', createResult.error)
                   }
                 } else {
                   console.log('✅ User profile already exists for:', session.user.email);
@@ -99,14 +104,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   if (pendingCertification && (!profileResult.profile?.certification_goal || profileResult.profile.certification_goal === '')) {
                     console.log('🔄 Updating existing profile with pending certification:', pendingCertification);
                     const { updateUserProfile } = await import('./supabase');
-                    await updateUserProfile(session.user.id, {
+                    const updateResult = await updateUserProfile(session.user.id, {
                       certification_goal: pendingCertification
                     });
                     
-                    // Clear pending certifications
-                    localStorage.removeItem('selectedCertification');
-                    localStorage.removeItem('pendingCertification');
-                    console.log('✅ Updated existing profile with certification:', pendingCertification);
+                    if (updateResult.success) {
+                      // Clear pending certifications
+                      localStorage.removeItem('selectedCertification');
+                      localStorage.removeItem('pendingCertification');
+                      console.log('✅ Updated existing profile with certification:', pendingCertification);
+                    } else {
+                      console.error('❌ Failed to update profile with certification:', updateResult.error);
+                    }
                   }
                 }
               } catch (err) {
@@ -131,10 +140,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     const result = await supabaseSignUp(email, password, fullName)
     if (result.success && result.user) {
-      // Don't set user state immediately - wait for email confirmation
-      // setUser(result.user)
-      
-      // Create user profile in user_profiles table
+      // Create user profile immediately after signup using admin privileges
       try {
         console.log('🏗️ Creating user profile for:', email, 'with certification:', certificationGoal)
         const { createUserProfile } = await import('./supabase')
@@ -157,10 +163,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } else {
           console.log('✅ User profile created successfully for:', email, 'with certification:', finalCertificationGoal)
-          // Keep certification in localStorage until email confirmation completes
-          if (finalCertificationGoal && typeof window !== 'undefined') {
-            localStorage.setItem('pendingCertification', finalCertificationGoal);
-            console.log('💾 Keeping certification as backup until email confirmation');
+          // Clear localStorage since profile was created successfully
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('selectedCertification');
+            localStorage.removeItem('pendingCertification');
+            console.log('🧹 Cleared localStorage after successful profile creation');
           }
         }
       } catch (err) {
