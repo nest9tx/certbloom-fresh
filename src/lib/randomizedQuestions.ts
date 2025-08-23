@@ -9,8 +9,22 @@ export async function getRandomizedAdaptiveQuestions(
 ) {
   try {
     console.log('🎯 Attempting randomized questions for:', { userId, certification, limit });
+    console.log('🔍 Database connection test...');
     
-    // Try the new randomized function first
+    // First test basic database connectivity
+    const { data: testData, error: testError } = await supabase
+      .from('certifications')
+      .select('id, name')
+      .limit(1);
+    
+    if (testError) {
+      console.error('❌ Database connectivity test failed:', testError);
+      return getAdaptiveQuestions(userId, certification, limit);
+    }
+    
+    console.log('✅ Database connectivity OK, found certifications:', testData?.length || 0);
+    
+    // Try the new randomized function
     const { data, error } = await supabase
       .rpc('get_randomized_adaptive_questions', {
         session_user_id: userId,
@@ -21,6 +35,7 @@ export async function getRandomizedAdaptiveQuestions(
 
     if (error) {
       console.warn('⚠️ Randomized function error, falling back:', error.message);
+      console.warn('⚠️ Error details:', error);
       return getAdaptiveQuestions(userId, certification, limit);
     }
 
@@ -30,6 +45,7 @@ export async function getRandomizedAdaptiveQuestions(
     }
 
     console.log('✅ Randomized questions found:', data.length);
+    console.log('🔍 Sample question:', data[0]);
     
     // Transform to match expected format and get answer choices
     const questionsWithChoices = [];
@@ -43,8 +59,10 @@ export async function getRandomizedAdaptiveQuestions(
         .order('choice_order');
       
       if (choicesError) {
-        console.warn('Warning: Could not fetch choices for question', q.id, choicesError);
+        console.warn('⚠️ Warning: Could not fetch choices for question', q.id, choicesError);
       }
+      
+      console.log(`🔍 Question ${q.id} has ${choices?.length || 0} answer choices`);
       
       questionsWithChoices.push({
         ...q,
@@ -56,6 +74,7 @@ export async function getRandomizedAdaptiveQuestions(
       });
     }
 
+    console.log('✅ Final questions with choices:', questionsWithChoices.length);
     return { success: true, questions: questionsWithChoices };
   } catch (err) {
     console.error('💥 Exception in randomized questions, using fallback:', err);

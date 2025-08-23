@@ -527,7 +527,10 @@ export default function DashboardPage() {
                 <p className="text-green-600 text-sm mb-4">
                   See how far you&apos;ve come and celebrate your progress.
                 </p>
-                <button className="w-full py-3 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-xl hover:from-green-600 hover:to-teal-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
+                <button 
+                  onClick={() => router.push('/analytics')}
+                  className="w-full py-3 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-xl hover:from-green-600 hover:to-teal-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                >
                   View Insights
                 </button>
               </div>
