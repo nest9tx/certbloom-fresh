@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import LearningMandala from '../../components/LearningMandala';
+import IntuitiveGuidance from '../../components/IntuitiveGuidance';
 
 export default function DashboardPage() {
   const { user, loading, signOut } = useAuth();
@@ -19,6 +21,14 @@ export default function DashboardPage() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'canceled' | 'free'>('free');
   const [userCertificationGoal, setUserCertificationGoal] = useState<string | null>(null);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+
+  // Helper function to determine session time for wisdom whispers
+  const getCurrentSessionTime = (): 'morning' | 'afternoon' | 'evening' => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'morning';
+    if (hour < 17) return 'afternoon';
+    return 'evening';
+  };
 
   // Check for success parameter from URL (client-side only)
   useEffect(() => {
@@ -386,6 +396,52 @@ export default function DashboardPage() {
               <p className="text-yellow-600 text-sm">On track for success</p>
             </div>
           </div>
+
+          {/* Adaptive Learning Garden - Co-Creative Intelligence */}
+          {userCertificationGoal && user && (
+            <div className="mb-12">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-gray-800 mb-3">Your Learning Garden 🌱</h2>
+                <p className="text-gray-600 max-w-2xl mx-auto">
+                  Witness your understanding bloom through conscious practice. Each question plants seeds of wisdom 
+                  that flower into mastery.
+                </p>
+              </div>
+              
+              <div className="grid lg:grid-cols-2 gap-8">
+                {/* Learning Mandala - Visual Journey */}
+                <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-purple-200/60 shadow-xl overflow-hidden">
+                  <div className="p-6">
+                    <h3 className="text-xl font-semibold text-purple-800 mb-4 text-center">
+                      Progress Mandala
+                    </h3>
+                    <p className="text-sm text-purple-600 text-center mb-6">
+                      Your knowledge blooming in sacred geometry
+                    </p>
+                  </div>
+                  <LearningMandala 
+                    userId={user.id} 
+                    certification={userCertificationGoal} 
+                  />
+                </div>
+
+                {/* Intuitive Guidance - Wisdom Whispers */}
+                <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-blue-200/60 shadow-xl">
+                  <h3 className="text-xl font-semibold text-blue-800 mb-4 text-center">
+                    Wisdom Whispers
+                  </h3>
+                  <p className="text-sm text-blue-600 text-center mb-6">
+                    Insights that emerge from your learning journey
+                  </p>
+                  <IntuitiveGuidance 
+                    userId={user.id} 
+                    certification={userCertificationGoal}
+                    sessionTime={getCurrentSessionTime()}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Main Action Grid */}
           <div className="grid lg:grid-cols-3 gap-8 mb-12">
