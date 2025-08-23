@@ -64,26 +64,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Check if user profile exists, create if it doesn't
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
               try {
-                const { getUserProfile, createUserProfile } = await import('./supabase')
+                const { getUserProfile } = await import('./supabase')
                 const profileResult = await getUserProfile(session.user.id)
                 
                 if (!profileResult.success) {
-                  // Profile doesn't exist, create it using admin privileges
-                  console.log('🏗️ Creating missing user profile for:', session.user.email)
+                  // Profile doesn't exist, create it using API route
+                  console.log('🏗️ Creating missing user profile via API for:', session.user.email)
                   
                   // Try to get certification from multiple sources
                   const storedCertification = typeof window !== 'undefined' 
                     ? localStorage.getItem('selectedCertification') || localStorage.getItem('pendingCertification')
                     : null;
                   
-                  const createResult = await createUserProfile(session.user.id, {
-                    email: session.user.email || '',
-                    full_name: session.user.user_metadata?.full_name || '',
-                    certification_goal: storedCertification || undefined,
-                  })
+                  const response = await fetch('/api/create-user-profile', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      userId: session.user.id,
+                      email: session.user.email || '',
+                      fullName: session.user.user_metadata?.full_name || '',
+                      certificationGoal: storedCertification
+                    })
+                  });
+
+                  const createResult = await response.json();
                   
                   if (createResult.success) {
-                    console.log('✅ User profile created successfully during sign-in')
+                    console.log('✅ User profile created successfully during sign-in via API')
                     // Clear the stored certification after using it
                     if (storedCertification && typeof window !== 'undefined') {
                       localStorage.removeItem('selectedCertification');
@@ -91,7 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                       console.log('✅ Used stored certification in profile creation:', storedCertification);
                     }
                   } else {
-                    console.error('❌ Failed to create user profile during sign-in:', createResult.error)
+                    console.error('❌ Failed to create user profile during sign-in via API:', createResult.error)
                   }
                 } else {
                   console.log('✅ User profile already exists for:', session.user.email);
@@ -140,29 +149,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     const result = await supabaseSignUp(email, password, fullName)
     if (result.success && result.user) {
-      // Create user profile immediately after signup using admin privileges
+      // Create user profile using API route (server-side with admin privileges)
       try {
-        console.log('🏗️ Creating user profile for:', email, 'with certification:', certificationGoal)
-        const { createUserProfile } = await import('./supabase')
+        console.log('🏗️ Creating user profile via API for:', email, 'with certification:', certificationGoal)
         
         // Make sure we have the most current certification goal
         const finalCertificationGoal = certificationGoal || (typeof window !== 'undefined' ? localStorage.getItem('selectedCertification') : null);
         
-        const profileResult = await createUserProfile(result.user.id, {
-          email,
-          full_name: fullName,
-          certification_goal: finalCertificationGoal || undefined,
-        })
+        const response = await fetch('/api/create-user-profile', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: result.user.id,
+            email,
+            fullName,
+            certificationGoal: finalCertificationGoal
+          })
+        });
+
+        const profileResult = await response.json();
         
         if (!profileResult.success) {
-          console.error('❌ Error creating user profile:', profileResult.error)
+          console.error('❌ Error creating user profile via API:', profileResult.error)
           // Store certification in localStorage as backup if profile creation fails
           if (finalCertificationGoal && typeof window !== 'undefined') {
             localStorage.setItem('pendingCertification', finalCertificationGoal);
             console.log('💾 Stored certification as backup due to profile creation failure');
           }
         } else {
-          console.log('✅ User profile created successfully for:', email, 'with certification:', finalCertificationGoal)
+          console.log('✅ User profile created successfully via API for:', email, 'with certification:', finalCertificationGoal)
           // Clear localStorage since profile was created successfully
           if (typeof window !== 'undefined') {
             localStorage.removeItem('selectedCertification');
@@ -171,7 +188,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
       } catch (err) {
-        console.error('❌ Exception creating user profile:', err)
+        console.error('❌ Exception creating user profile via API:', err)
         // Store certification in localStorage as backup
         const finalCertificationGoal = certificationGoal || (typeof window !== 'undefined' ? localStorage.getItem('selectedCertification') : null);
         if (finalCertificationGoal && typeof window !== 'undefined') {
