@@ -513,7 +513,7 @@ export default function DashboardPage() {
                   5 targeted questions to keep your momentum going.
                 </p>
                 <Link 
-                  href="/practice/session"
+                  href="/practice/session?type=quick&length=5"
                   className="block w-full py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-xl hover:from-orange-600 hover:to-yellow-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 text-center"
                 >
                   Quick Quiz

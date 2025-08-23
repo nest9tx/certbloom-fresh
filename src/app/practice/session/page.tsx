@@ -40,6 +40,29 @@ export default function PracticeSessionPage() {
   // Get today's date as a string for localStorage key
   const todayKey = new Date().toDateString();
 
+  // Get session parameters from URL
+  const [sessionType, setSessionType] = useState<'quick' | 'full' | 'custom'>('full');
+  const [sessionLength, setSessionLength] = useState<number>(10);
+
+  // Parse URL parameters on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const type = urlParams.get('type') as 'quick' | 'full' | 'custom' | null;
+      const length = urlParams.get('length');
+      
+      if (type) setSessionType(type);
+      if (length) setSessionLength(parseInt(length));
+      
+      // Set defaults based on type
+      if (type === 'quick') {
+        setSessionLength(5);
+      } else if (type === 'full') {
+        setSessionLength(15);
+      }
+    }
+  }, []);
+
   // Fetch subscription status and certification goal
   useEffect(() => {
     async function fetchUserData() {
@@ -74,45 +97,29 @@ export default function PracticeSessionPage() {
       if (subscriptionStatus !== null && user && userCertificationGoal) {
         setIsLoadingQuestions(true);
         try {
-          // If we have an adaptive session, use those questions
-          if (adaptiveSession) {
-            const sessionQuestions = [
-              ...adaptiveSession.review_questions,
-              ...adaptiveSession.new_questions
-            ];
+          // If we have an adaptive session, we still need to get full question data
+          if (adaptiveSession && adaptiveSession.review_questions.length > 0) {
+            // For adaptive sessions, get questions normally but limit to session length
+            const result = await getAdaptiveQuestions(
+              user.id,
+              userCertificationGoal,
+              Math.min(sessionLength, adaptiveSession.review_questions.length + adaptiveSession.new_questions.length)
+            );
             
-            // Convert adaptive session questions to Question format
-            const convertedQuestions: Question[] = sessionQuestions.map((q, index) => {
-              const difficultyNum = ('difficulty' in q ? q.difficulty : q.difficulty_level) || 1;
-              const difficultyLevel = difficultyNum <= 1 ? 'easy' : difficultyNum <= 2 ? 'medium' : 'hard';
-              
-              return {
-                id: q.question_id,
-                question_text: q.question_text || `Question ${index + 1}`,
-                answer_choices: [], // Will be populated from database
-                correct_answer: 0,
-                explanation: '',
-                topic_id: '',
-                certification_id: '', // Will be populated from database
-                cognitive_level: 'comprehension' as const,
-                difficulty_level: difficultyLevel as 'easy' | 'medium' | 'hard',
-                question_type: 'multiple_choice' as const,
-                tags: [],
-                active: true,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              };
-            });
-            
-            setAvailableQuestions(convertedQuestions);
+            if (result.success && result.questions) {
+              setAvailableQuestions(result.questions);
+            } else {
+              console.error('Error loading adaptive session questions:', result.error);
+              setAvailableQuestions([]);
+            }
           } else {
-            // For free users, limit to 5 questions. For Pro users, get more variety
-            const maxQuestions = subscriptionStatus === 'active' ? 15 : 5;
+            // Use URL-specified session length or defaults
+            const effectiveLength = sessionLength || (subscriptionStatus === 'active' ? 15 : 5);
             
             const result = await getAdaptiveQuestions(
               user.id,
               userCertificationGoal,
-              maxQuestions
+              effectiveLength
             );
             
             if (result.success && result.questions) {
@@ -132,7 +139,7 @@ export default function PracticeSessionPage() {
     }
     
     loadQuestions();
-  }, [subscriptionStatus, userCertificationGoal, user, adaptiveSession]);
+  }, [subscriptionStatus, userCertificationGoal, user, adaptiveSession, sessionLength]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -199,12 +206,15 @@ export default function PracticeSessionPage() {
     setSelectedMood(mood);
     if (user && userCertificationGoal) {
       try {
+        // Use URL-specified session length or default
+        const effectiveLength = sessionLength || (subscriptionStatus === 'active' ? 15 : 5);
+        
         // Build adaptive session based on mood
         const session = await buildAdaptiveSession(
           user.id,
           userCertificationGoal,
           mood,
-          subscriptionStatus === 'active' ? 15 : 5
+          effectiveLength
         );
         setAdaptiveSession(session);
         
@@ -534,7 +544,9 @@ export default function PracticeSessionPage() {
               {/* Progress Header */}
               <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-green-200/60 shadow-lg mb-8">
                 <div className="flex items-center justify-between mb-4">
-                  <h1 className="text-2xl font-semibold text-green-800">Adaptive Practice Session</h1>
+                  <h1 className="text-2xl font-semibold text-green-800">
+                    {sessionType === 'quick' ? 'Quick Practice Session' : 'Adaptive Practice Session'}
+                  </h1>
               <button
                 onClick={() => setShowBreathing(true)}
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
