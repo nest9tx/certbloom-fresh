@@ -7,10 +7,21 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { getAdaptiveQuestions, recordQuestionAttempt } from '@/lib/questionBank';
 import type { Question, QuestionAttempt, AnswerChoice } from '@/lib/questionBank';
+import MoodSelector from '@/components/MoodSelector';
+import { buildAdaptiveSession, getWisdomWhisper } from '@/lib/adaptiveLearning';
+import type { AdaptiveSession, WisdomWhisper } from '@/lib/adaptiveLearning';
 
 export default function PracticeSessionPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  
+  // Mood and adaptive learning state
+  const [selectedMood, setSelectedMood] = useState<string | null>(null);
+  const [adaptiveSession, setAdaptiveSession] = useState<AdaptiveSession | null>(null);
+  const [wisdomWhisper, setWisdomWhisper] = useState<WisdomWhisper | null>(null);
+  const [sessionPhase, setSessionPhase] = useState<'mood-select' | 'practice' | 'break' | 'complete'>('mood-select');
+  
+  // Existing state
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
@@ -57,26 +68,59 @@ export default function PracticeSessionPage() {
     }
   }, [user, subscriptionStatus, todayKey]);
 
-  // Load questions from database based on certification
+  // Load questions from database based on certification OR use adaptive session
   useEffect(() => {
     async function loadQuestions() {
       if (subscriptionStatus !== null && user && userCertificationGoal) {
         setIsLoadingQuestions(true);
         try {
-          // For free users, limit to 5 questions. For Pro users, get more variety
-          const maxQuestions = subscriptionStatus === 'active' ? 15 : 5;
-          
-          const result = await getAdaptiveQuestions(
-            user.id,
-            userCertificationGoal,
-            maxQuestions
-          );
-          
-          if (result.success && result.questions) {
-            setAvailableQuestions(result.questions);
+          // If we have an adaptive session, use those questions
+          if (adaptiveSession) {
+            const sessionQuestions = [
+              ...adaptiveSession.review_questions,
+              ...adaptiveSession.new_questions
+            ];
+            
+            // Convert adaptive session questions to Question format
+            const convertedQuestions: Question[] = sessionQuestions.map((q, index) => {
+              const difficultyNum = ('difficulty' in q ? q.difficulty : q.difficulty_level) || 1;
+              const difficultyLevel = difficultyNum <= 1 ? 'easy' : difficultyNum <= 2 ? 'medium' : 'hard';
+              
+              return {
+                id: q.question_id,
+                question_text: q.question_text || `Question ${index + 1}`,
+                answer_choices: [], // Will be populated from database
+                correct_answer: 0,
+                explanation: '',
+                topic_id: '',
+                certification_id: '', // Will be populated from database
+                cognitive_level: 'comprehension' as const,
+                difficulty_level: difficultyLevel as 'easy' | 'medium' | 'hard',
+                question_type: 'multiple_choice' as const,
+                tags: [],
+                active: true,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              };
+            });
+            
+            setAvailableQuestions(convertedQuestions);
           } else {
-            console.error('Error loading questions:', result.error);
-            setAvailableQuestions([]);
+            // For free users, limit to 5 questions. For Pro users, get more variety
+            const maxQuestions = subscriptionStatus === 'active' ? 15 : 5;
+            
+            const result = await getAdaptiveQuestions(
+              user.id,
+              userCertificationGoal,
+              maxQuestions
+            );
+            
+            if (result.success && result.questions) {
+              setAvailableQuestions(result.questions);
+            } else {
+              console.error('Error loading questions:', result.error);
+              setAvailableQuestions([]);
+            }
           }
         } catch (error) {
           console.error('Error loading questions:', error);
@@ -88,7 +132,7 @@ export default function PracticeSessionPage() {
     }
     
     loadQuestions();
-  }, [subscriptionStatus, userCertificationGoal, user]);
+  }, [subscriptionStatus, userCertificationGoal, user, adaptiveSession]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -148,6 +192,34 @@ export default function PracticeSessionPage() {
     if (score >= 80) return 'text-green-600';
     if (score >= 60) return 'text-yellow-600';
     return 'text-orange-600';
+  };
+
+  // Handle mood selection and build adaptive session
+  const handleMoodSelect = async (mood: string) => {
+    setSelectedMood(mood);
+    if (user && userCertificationGoal) {
+      try {
+        // Build adaptive session based on mood
+        const session = await buildAdaptiveSession(
+          user.id,
+          userCertificationGoal,
+          mood,
+          subscriptionStatus === 'active' ? 15 : 5
+        );
+        setAdaptiveSession(session);
+        
+        // Get mood-appropriate wisdom whisper
+        const whisper = await getWisdomWhisper(mood);
+        setWisdomWhisper(whisper);
+        
+        // Move to practice phase
+        setSessionPhase('practice');
+      } catch (error) {
+        console.error('Error building adaptive session:', error);
+        // Fallback to existing question loading
+        setSessionPhase('practice');
+      }
+    }
   };
 
   if (loading || isLoadingQuestions) {
@@ -434,10 +506,35 @@ export default function PracticeSessionPage() {
       <div className="container mx-auto px-6 py-8">
         <div className="max-w-4xl mx-auto">
           
-          {/* Progress Header */}
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-green-200/60 shadow-lg mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h1 className="text-2xl font-semibold text-green-800">Adaptive Practice Session</h1>
+          {/* Mood Selection Phase */}
+          {sessionPhase === 'mood-select' && (
+            <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-8 border border-violet-200/60 shadow-lg mb-8">
+              <MoodSelector 
+                onMoodSelect={handleMoodSelect}
+                selectedMood={selectedMood || undefined}
+              />
+            </div>
+          )}
+
+          {/* Practice Phase */}
+          {sessionPhase === 'practice' && (
+            <>
+              {/* Wisdom Whisper */}
+              {wisdomWhisper && (
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 mb-6">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-xl">{wisdomWhisper.icon}</span>
+                    <p className="text-amber-800 italic text-sm">
+                      {wisdomWhisper.message}
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Progress Header */}
+              <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-green-200/60 shadow-lg mb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h1 className="text-2xl font-semibold text-green-800">Adaptive Practice Session</h1>
               <button
                 onClick={() => setShowBreathing(true)}
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
@@ -586,6 +683,8 @@ export default function PracticeSessionPage() {
               by focusing on areas where you need the most support.
             </p>
           </div>
+            </>
+          )}
         </div>
       </div>
 
