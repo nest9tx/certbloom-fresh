@@ -191,6 +191,10 @@ export default function PracticeSessionPage() {
         localStorage.setItem(sessionKey, newCount.toString());
         setDailySessionCount(newCount);
       }
+      
+      // Signal mandala to refresh on dashboard
+      localStorage.setItem('sessionCompleted', Date.now().toString());
+      
       setSessionComplete(true);
     }
   };

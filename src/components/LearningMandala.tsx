@@ -20,6 +20,7 @@ export default function LearningMandala({ userId, certification }: LearningManda
   const [petals, setPetals] = useState<LearningMandalaPetal[]>([]);
   const [centerEnergy, setCenterEnergy] = useState(0);
   const [breathPhase, setBreathPhase] = useState(0);
+  const [lastRefresh, setLastRefresh] = useState(Date.now());
 
   const loadLearningGarden = useCallback(async () => {
     const result = await getUserProgress(userId, certification);
@@ -80,6 +81,36 @@ export default function LearningMandala({ userId, certification }: LearningManda
     
     return () => clearInterval(breathInterval);
   }, [loadLearningGarden]);
+
+  // Listen for window focus to refresh mandala after practice sessions
+  useEffect(() => {
+    const handleFocus = () => {
+      const now = Date.now();
+      if (now - lastRefresh > 30000) { // Refresh if more than 30 seconds since last refresh
+        setLastRefresh(now);
+        loadLearningGarden();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    
+    // Also check for localStorage changes (practice session completion)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'sessionCompleted' && e.newValue) {
+        setTimeout(() => {
+          loadLearningGarden();
+          localStorage.removeItem('sessionCompleted');
+        }, 1000);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [lastRefresh, loadLearningGarden]);
 
   const getBreathScale = () => {
     // Gentle breathing: inhale 1.0 -> 1.05 -> exhale 1.0
