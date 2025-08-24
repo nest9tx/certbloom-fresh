@@ -82,33 +82,61 @@ export default function LearningMandala({ userId, certification }: LearningManda
     return () => clearInterval(breathInterval);
   }, [loadLearningGarden]);
 
-  // Listen for window focus to refresh mandala after practice sessions
+  // Listen for window focus and session completion events
   useEffect(() => {
     const handleFocus = () => {
       const now = Date.now();
-      if (now - lastRefresh > 30000) { // Refresh if more than 30 seconds since last refresh
+      if (now - lastRefresh > 10000) { // More frequent refresh (10 seconds)
+        console.log('🔄 Mandala refreshing on window focus');
         setLastRefresh(now);
         loadLearningGarden();
       }
     };
 
-    window.addEventListener('focus', handleFocus);
-    
-    // Also check for localStorage changes (practice session completion)
+    // Listen for localStorage changes (practice session completion)
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'sessionCompleted' && e.newValue) {
+      if ((e.key === 'sessionCompleted' || e.key === 'lastSessionCompleted') && e.newValue) {
+        console.log('🔄 Mandala refreshing due to session completion');
         setTimeout(() => {
           loadLearningGarden();
-          localStorage.removeItem('sessionCompleted');
-        }, 1000);
+          // Don't remove the key immediately, let it persist for debugging
+        }, 500);
       }
     };
 
+    // Listen for custom events from practice session
+    const handleSessionComplete = (event: CustomEvent) => {
+      console.log('🔄 Mandala refreshing due to session completion event', event.detail);
+      setTimeout(() => {
+        loadLearningGarden();
+      }, 1000);
+    };
+
+    // Check for existing session completion data on mount
+    const checkExistingSession = () => {
+      const lastSession = localStorage.getItem('lastSessionCompleted');
+      if (lastSession) {
+        try {
+          const sessionData = JSON.parse(lastSession);
+          console.log('🔄 Found existing session data on mandala mount:', sessionData);
+          loadLearningGarden();
+        } catch (e) {
+          console.error('Error parsing session data:', e);
+        }
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
     window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('sessionCompleted', handleSessionComplete as EventListener);
+    
+    // Check for existing data after a short delay
+    setTimeout(checkExistingSession, 1000);
 
     return () => {
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('sessionCompleted', handleSessionComplete as EventListener);
     };
   }, [lastRefresh, loadLearningGarden]);
 

@@ -215,43 +215,92 @@ export default function PracticeSessionPage() {
       
       // Save session data to database
       if (user) {
-        const correctCount = answers.filter((answer, index) => {
+        // Include the current answer in calculation
+        const allAnswers = [...answers, selectedAnswer];
+        const correctCount = allAnswers.filter((answer, index) => {
           const question = availableQuestions[index];
           const selectedChoice = question?.answer_choices?.[answer];
           return selectedChoice?.is_correct || false;
         }).length;
         
-        // Save session asynchronously (don't wait for it)
+        console.log('🎯 Saving session data:', {
+          userId: user.id,
+          sessionId,
+          certification: userCertificationGoal,
+          questionsAttempted: allAnswers.length,
+          questionsCorrect: correctCount,
+          score: (correctCount / allAnswers.length * 100).toFixed(1) + '%'
+        });
+        
+        // Save session with proper error handling and retry
         const saveSession = async () => {
           try {
             const { supabase } = await import('../../../lib/supabase');
-            await supabase
+            const sessionData = {
+              user_id: user.id,
+              session_id: sessionId,
+              certification_name: userCertificationGoal || 'General',
+              session_type: sessionType,
+              session_length: availableQuestions.length,
+              questions_attempted: allAnswers.length,
+              questions_correct: correctCount,
+              mood: selectedMood,
+              completed_at: new Date().toISOString()
+            };
+            
+            const { data, error } = await supabase
               .from('practice_sessions')
-              .insert([
-                {
+              .insert([sessionData])
+              .select();
+            
+            if (error) {
+              console.error('❌ Database error saving session:', error);
+              throw error;
+            }
+            
+            console.log('✅ Session data saved successfully:', data);
+            
+            // Trigger mandala refresh by updating localStorage with session details
+            localStorage.setItem('lastSessionCompleted', JSON.stringify({
+              timestamp: Date.now(),
+              correctRate: correctCount / allAnswers.length,
+              topic: userCertificationGoal || 'General',
+              questionsCorrect: correctCount,
+              questionsTotal: allAnswers.length
+            }));
+            
+            // Also trigger a direct refresh event
+            window.dispatchEvent(new CustomEvent('sessionCompleted', {
+              detail: sessionData
+            }));
+            
+          } catch (error) {
+            console.error('❌ Error saving session data:', error);
+            // Retry once after a short delay
+            setTimeout(async () => {
+              try {
+                const { supabase } = await import('../../../lib/supabase');
+                await supabase.from('practice_sessions').insert([{
                   user_id: user.id,
-                  session_id: sessionId,
-                  certification_name: userCertificationGoal || 'Unknown',
+                  session_id: sessionId + '_retry',
+                  certification_name: userCertificationGoal || 'General',
                   session_type: sessionType,
                   session_length: availableQuestions.length,
-                  questions_attempted: answers.length,
+                  questions_attempted: allAnswers.length,
                   questions_correct: correctCount,
                   mood: selectedMood,
                   completed_at: new Date().toISOString()
-                }
-              ]);
-            
-            console.log('✅ Session data saved to database');
-          } catch (error) {
-            console.error('❌ Error saving session data:', error);
+                }]);
+                console.log('✅ Session data saved on retry');
+              } catch (retryError) {
+                console.error('❌ Failed to save session data on retry:', retryError);
+              }
+            }, 2000);
           }
         };
         
         saveSession();
       }
-      
-      // Signal mandala to refresh on dashboard
-      localStorage.setItem('sessionCompleted', Date.now().toString());
       
       setSessionComplete(true);
     }
