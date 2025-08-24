@@ -236,15 +236,21 @@ export default function PracticeSessionPage() {
         const saveSession = async () => {
           try {
             const { supabase } = await import('../../../lib/supabase');
+            
+            // Build topics covered array
+            const topicsCovered = userCertificationGoal ? [userCertificationGoal] : ['General'];
+            
             const sessionData = {
               user_id: user.id,
-              session_id: sessionId,
-              certification_name: userCertificationGoal || 'General',
               session_type: sessionType,
-              session_length: availableQuestions.length,
-              questions_attempted: allAnswers.length,
-              questions_correct: correctCount,
-              mood: selectedMood,
+              questions_answered: allAnswers.length,
+              correct_answers: correctCount,
+              topics_covered: topicsCovered,
+              mood_before: selectedMood,
+              mood_after: null, // Could be enhanced later
+              confidence_scores: [], // Could be enhanced later
+              session_duration: null, // Could be tracked later
+              adaptive_adjustments: null,
               completed_at: new Date().toISOString()
             };
             
@@ -282,13 +288,11 @@ export default function PracticeSessionPage() {
                 const { supabase } = await import('../../../lib/supabase');
                 await supabase.from('practice_sessions').insert([{
                   user_id: user.id,
-                  session_id: sessionId + '_retry',
-                  certification_name: userCertificationGoal || 'General',
-                  session_type: sessionType,
-                  session_length: availableQuestions.length,
-                  questions_attempted: allAnswers.length,
-                  questions_correct: correctCount,
-                  mood: selectedMood,
+                  session_type: sessionType + '_retry',
+                  questions_answered: allAnswers.length,
+                  correct_answers: correctCount,
+                  topics_covered: [userCertificationGoal || 'General'],
+                  mood_before: selectedMood,
                   completed_at: new Date().toISOString()
                 }]);
                 console.log('✅ Session data saved on retry');
