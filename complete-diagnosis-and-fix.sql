@@ -322,6 +322,97 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Grant permissions
 GRANT EXECUTE ON FUNCTION get_user_dashboard_data(UUID) TO anon, authenticated;
 
+-- Drop existing function with different signature before creating new one
+DROP FUNCTION IF EXISTS get_randomized_adaptive_questions(uuid,text,integer,integer);
+DROP FUNCTION IF EXISTS get_simple_questions(integer);
+
+-- Function for randomized question selection (CRITICAL FOR SESSION LOADING)
+CREATE OR REPLACE FUNCTION get_randomized_adaptive_questions(
+    session_user_id UUID,
+    input_certification_name TEXT,
+    session_length INTEGER DEFAULT 10,
+    exclude_recent_hours INTEGER DEFAULT 1
+)
+RETURNS TABLE (
+    id UUID,
+    question_text TEXT,
+    explanation TEXT,
+    difficulty_level TEXT,
+    certification_name TEXT,
+    topic_name TEXT,
+    topic_description TEXT,
+    created_at TIMESTAMPTZ
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        q.id,
+        q.question_text,
+        q.explanation,
+        q.difficulty_level,
+        c.name as certification_name,
+        t.name as topic_name,
+        t.description as topic_description,
+        q.created_at
+    FROM questions q
+    JOIN certifications c ON q.certification_id = c.id
+    JOIN topics t ON q.topic_id = t.id
+    WHERE c.name = input_certification_name
+    AND q.id NOT IN (
+        -- Exclude recently answered questions
+        SELECT qa.question_id 
+        FROM question_attempts qa 
+        WHERE qa.user_id = session_user_id 
+        AND qa.attempted_at > NOW() - (exclude_recent_hours || ' hours')::INTERVAL
+    )
+    ORDER BY RANDOM()
+    LIMIT session_length;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Grant permissions for the randomization function
+GRANT EXECUTE ON FUNCTION get_randomized_adaptive_questions(UUID, TEXT, INTEGER, INTEGER) TO anon, authenticated;
+
+-- Simple fallback function for basic question loading if complex structures don't exist
+CREATE OR REPLACE FUNCTION get_simple_questions(
+    session_length INTEGER DEFAULT 10
+)
+RETURNS TABLE (
+    id UUID,
+    question_text TEXT,
+    explanation TEXT,
+    difficulty_level TEXT,
+    certification_name TEXT,
+    topic_name TEXT,
+    topic_description TEXT,
+    created_at TIMESTAMPTZ
+) AS $$
+BEGIN
+    -- If we don't have full structure, return questions from basic table
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'questions') THEN
+        RETURN QUERY
+        SELECT 
+            q.id,
+            q.question_text,
+            q.explanation,
+            COALESCE(q.difficulty_level, 'medium') as difficulty_level,
+            'PPR' as certification_name,
+            'General Practice' as topic_name,
+            'General practice questions' as topic_description,
+            COALESCE(q.created_at, NOW()) as created_at
+        FROM questions q
+        ORDER BY RANDOM()
+        LIMIT session_length;
+    ELSE
+        -- Return empty if no questions table exists
+        RETURN;
+    END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Grant permissions
+GRANT EXECUTE ON FUNCTION get_simple_questions(INTEGER) TO anon, authenticated;
+
 -- =============================================
 -- STEP 5: TEST WITH EXISTING DATA
 -- =============================================
