@@ -95,11 +95,10 @@ export default function LearningMandala({ userId, certification }: LearningManda
 
     // Listen for localStorage changes (practice session completion)
     const handleStorageChange = (e: StorageEvent) => {
-      if ((e.key === 'sessionCompleted' || e.key === 'lastSessionCompleted') && e.newValue) {
+      if ((e.key === 'sessionCompleted' || e.key === 'lastSessionCompleted' || e.key === 'mandalaLastUpdate') && e.newValue) {
         console.log('🔄 Mandala refreshing due to session completion');
         setTimeout(() => {
           loadLearningGarden();
-          // Don't remove the key immediately, let it persist for debugging
         }, 500);
       }
     };
@@ -112,13 +111,23 @@ export default function LearningMandala({ userId, certification }: LearningManda
       }, 1000);
     };
 
+    // Listen for explicit mandala refresh events
+    const handleMandalaRefresh = (event: CustomEvent) => {
+      console.log('🔄 Mandala refreshing due to explicit refresh event', event.detail);
+      setTimeout(() => {
+        loadLearningGarden();
+      }, 500);
+    };
+
     // Check for existing session completion data on mount
     const checkExistingSession = () => {
       const lastSession = localStorage.getItem('lastSessionCompleted');
-      if (lastSession) {
+      const lastUpdate = localStorage.getItem('mandalaLastUpdate');
+      
+      if (lastSession || lastUpdate) {
         try {
-          const sessionData = JSON.parse(lastSession);
-          console.log('🔄 Found existing session data on mandala mount:', sessionData);
+          const sessionData = lastSession ? JSON.parse(lastSession) : null;
+          console.log('🔄 Found existing session/update data on mandala mount:', { sessionData, lastUpdate });
           loadLearningGarden();
         } catch (e) {
           console.error('Error parsing session data:', e);
@@ -129,6 +138,7 @@ export default function LearningMandala({ userId, certification }: LearningManda
     window.addEventListener('focus', handleFocus);
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('sessionCompleted', handleSessionComplete as EventListener);
+    window.addEventListener('mandalaRefresh', handleMandalaRefresh as EventListener);
     
     // Check for existing data after a short delay
     setTimeout(checkExistingSession, 1000);
@@ -137,6 +147,7 @@ export default function LearningMandala({ userId, certification }: LearningManda
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('sessionCompleted', handleSessionComplete as EventListener);
+      window.removeEventListener('mandalaRefresh', handleMandalaRefresh as EventListener);
     };
   }, [lastRefresh, loadLearningGarden]);
 

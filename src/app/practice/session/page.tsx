@@ -266,19 +266,34 @@ export default function PracticeSessionPage() {
             
             console.log('✅ Session data saved successfully:', data);
             
-            // Trigger mandala refresh by updating localStorage with session details
-            localStorage.setItem('lastSessionCompleted', JSON.stringify({
+            // Trigger comprehensive mandala and dashboard refresh
+            const refreshData = {
               timestamp: Date.now(),
               correctRate: correctCount / allAnswers.length,
               topic: userCertificationGoal || 'General',
               questionsCorrect: correctCount,
-              questionsTotal: allAnswers.length
-            }));
+              questionsTotal: allAnswers.length,
+              sessionId: data[0]?.id
+            };
             
-            // Also trigger a direct refresh event
-            window.dispatchEvent(new CustomEvent('sessionCompleted', {
-              detail: sessionData
-            }));
+            localStorage.setItem('lastSessionCompleted', JSON.stringify(refreshData));
+            localStorage.setItem('mandalaLastUpdate', Date.now().toString());
+            localStorage.setItem('dashboardLastUpdate', Date.now().toString());
+            
+            // Trigger multiple refresh events for comprehensive update
+            window.dispatchEvent(new CustomEvent('sessionCompleted', { detail: sessionData }));
+            window.dispatchEvent(new CustomEvent('mandalaRefresh', { detail: refreshData }));
+            window.dispatchEvent(new CustomEvent('dashboardRefresh', { detail: refreshData }));
+            
+            console.log('🔄 Triggered mandala and dashboard refresh events');
+            
+            // Import and call the explicit refresh function
+            try {
+              const { triggerMandalaRefresh } = await import('../../../lib/getDashboardData');
+              triggerMandalaRefresh();
+            } catch (importError) {
+              console.warn('⚠️ Could not import mandala refresh function:', importError);
+            }
             
           } catch (error) {
             console.error('❌ Error saving session data:', error);

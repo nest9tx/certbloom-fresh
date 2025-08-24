@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import LearningMandala from '../../components/LearningMandala';
 import IntuitiveGuidance from '../../components/IntuitiveGuidance';
+import { DashboardData } from '../../lib/getDashboardData';
 
 export default function DashboardPage() {
   const { user, loading, signOut } = useAuth();
@@ -15,12 +16,22 @@ export default function DashboardPage() {
   const [currentMood, setCurrentMood] = useState<string>('');
   const [showBreathing, setShowBreathing] = useState(false);
   const [breathingCount, setBreathingCount] = useState(0);
-  const [studyStreak] = useState(3);
-  const [weeklyGoal] = useState(75);
-  const [currentProgress] = useState(42);
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'canceled' | 'free'>('free');
   const [userCertificationGoal, setUserCertificationGoal] = useState<string | null>(null);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  
+  // Real dashboard data
+  const [dashboardData, setDashboardData] = useState<DashboardData>({
+    stats: {
+      total_sessions: 0,
+      total_questions: 0, 
+      total_correct: 0,
+      accuracy: 0,
+      wellness_score: 50
+    },
+    progress: []
+  });
+  const [isLoadingDashboard, setIsLoadingDashboard] = useState(true);
 
   // Helper function to determine session time for wisdom whispers
   const getCurrentSessionTime = (): 'morning' | 'afternoon' | 'evening' => {
@@ -50,17 +61,27 @@ export default function DashboardPage() {
   useEffect(() => {
     async function fetchUserData() {
       if (user) {
+        setIsLoadingDashboard(true);
+        
         const { getSubscriptionStatus } = await import('../../lib/getSubscriptionStatus');
         const { getUserCertificationGoal } = await import('../../lib/getUserCertificationGoal');
+        const { getDashboardData } = await import('../../lib/getDashboardData');
         
-        const [status, certificationGoal] = await Promise.all([
+        const [status, certificationGoal, dashboardStats] = await Promise.all([
           getSubscriptionStatus(user.id),
-          getUserCertificationGoal(user.id)
+          getUserCertificationGoal(user.id),
+          getDashboardData(user.id)
         ]);
         
-        console.log('📋 Fetched user data:', { status, certificationGoal });
+        console.log('📋 Fetched user data:', { status, certificationGoal, dashboardStats });
         setSubscriptionStatus(status);
         setUserCertificationGoal(certificationGoal);
+        
+        if (dashboardStats) {
+          setDashboardData(dashboardStats);
+        }
+        
+        setIsLoadingDashboard(false);
         
         // If user doesn't have a certification goal, check for pending one and restore it
         if (!certificationGoal) {
@@ -98,35 +119,47 @@ export default function DashboardPage() {
   useEffect(() => {
     const handleFocus = async () => {
       if (user) {
-        console.log('🔄 Dashboard focused, refreshing certification goal...');
+        console.log('🔄 Dashboard focused, refreshing data...');
         const { getUserCertificationGoal } = await import('../../lib/getUserCertificationGoal');
         const { getSubscriptionStatus } = await import('../../lib/getSubscriptionStatus');
+        const { getDashboardData } = await import('../../lib/getDashboardData');
         
-        const [certificationGoal, status] = await Promise.all([
+        const [certificationGoal, status, dashboardStats] = await Promise.all([
           getUserCertificationGoal(user.id),
-          getSubscriptionStatus(user.id)
+          getSubscriptionStatus(user.id),
+          getDashboardData(user.id)
         ]);
         
-        console.log('📋 Refreshed data:', { certificationGoal, status });
+        console.log('📋 Refreshed data:', { certificationGoal, status, dashboardStats });
         setUserCertificationGoal(certificationGoal);
         setSubscriptionStatus(status);
+        
+        if (dashboardStats) {
+          setDashboardData(dashboardStats);
+        }
       }
     };
 
     const handleVisibilityChange = async () => {
       if (!document.hidden && user) {
-        console.log('🔄 Page visible, refreshing certification goal...');
+        console.log('🔄 Page visible, refreshing data...');
         const { getUserCertificationGoal } = await import('../../lib/getUserCertificationGoal');
         const { getSubscriptionStatus } = await import('../../lib/getSubscriptionStatus');
+        const { getDashboardData } = await import('../../lib/getDashboardData');
         
-        const [certificationGoal, status] = await Promise.all([
+        const [certificationGoal, status, dashboardStats] = await Promise.all([
           getUserCertificationGoal(user.id),
-          getSubscriptionStatus(user.id)
+          getSubscriptionStatus(user.id),
+          getDashboardData(user.id)
         ]);
         
-        console.log('📋 Refreshed data:', { certificationGoal, status });
+        console.log('📋 Refreshed data:', { certificationGoal, status, dashboardStats });
         setUserCertificationGoal(certificationGoal);
         setSubscriptionStatus(status);
+        
+        if (dashboardStats) {
+          setDashboardData(dashboardStats);
+        }
       }
     };
 
@@ -339,33 +372,39 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* Study Streak */}
+            {/* Study Sessions */}
             <div className="bg-gradient-to-br from-green-100 to-green-50 rounded-2xl p-6 border border-green-200/60 shadow-lg">
               <div className="flex items-center justify-between mb-4">
                 <div className="text-3xl">🔥</div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-green-700">{studyStreak}</div>
-                  <div className="text-sm text-green-600">Day Streak</div>
+                  <div className="text-2xl font-bold text-green-700">
+                    {isLoadingDashboard ? '...' : dashboardData.stats.total_sessions}
+                  </div>
+                  <div className="text-sm text-green-600">Sessions</div>
                 </div>
               </div>
-              <h3 className="text-lg font-semibold text-green-800 mb-2">Study Consistency</h3>
+              <h3 className="text-lg font-semibold text-green-800 mb-2">Study Sessions</h3>
               <p className="text-green-600 text-sm">You&apos;re building great habits!</p>
             </div>
 
-            {/* Weekly Progress */}
+            {/* Question Accuracy */}
             <div className="bg-gradient-to-br from-orange-100 to-orange-50 rounded-2xl p-6 border border-orange-200/60 shadow-lg">
               <div className="flex items-center justify-between mb-4">
                 <div className="text-3xl">📊</div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-orange-700">{currentProgress}%</div>
-                  <div className="text-sm text-orange-600">of {weeklyGoal}%</div>
+                  <div className="text-2xl font-bold text-orange-700">
+                    {isLoadingDashboard ? '...' : `${dashboardData.stats.accuracy}%`}
+                  </div>
+                  <div className="text-sm text-orange-600">
+                    {isLoadingDashboard ? 'Loading...' : `${dashboardData.stats.total_correct}/${dashboardData.stats.total_questions}`}
+                  </div>
                 </div>
               </div>
-              <h3 className="text-lg font-semibold text-green-800 mb-2">Weekly Goal</h3>
+              <h3 className="text-lg font-semibold text-green-800 mb-2">Accuracy Rate</h3>
               <div className="w-full bg-orange-200 rounded-full h-2">
                 <div 
                   className="bg-gradient-to-r from-orange-500 to-orange-600 h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${(currentProgress / weeklyGoal) * 100}%` }}
+                  style={{ width: `${isLoadingDashboard ? 0 : dashboardData.stats.accuracy}%` }}
                 ></div>
               </div>
             </div>
@@ -375,12 +414,20 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between mb-4">
                 <div className="text-3xl">🧘‍♀️</div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-blue-700">85</div>
+                  <div className="text-2xl font-bold text-blue-700">
+                    {isLoadingDashboard ? '...' : dashboardData.stats.wellness_score}
+                  </div>
                   <div className="text-sm text-blue-600">Wellness</div>
                 </div>
               </div>
               <h3 className="text-lg font-semibold text-green-800 mb-2">Mind & Spirit</h3>
-              <p className="text-blue-600 text-sm">Balanced and focused</p>
+              <p className="text-blue-600 text-sm">
+                {isLoadingDashboard ? 'Loading...' : 
+                 dashboardData.stats.wellness_score >= 80 ? 'Excellent balance!' :
+                 dashboardData.stats.wellness_score >= 60 ? 'Balanced and focused' :
+                 'Building wellness habits'
+                }
+              </p>
             </div>
 
             {/* Certification Progress */}
