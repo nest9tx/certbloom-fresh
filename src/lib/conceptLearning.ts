@@ -127,7 +127,7 @@ export async function getCertifications(): Promise<Certification[]> {
 
 export async function getCertificationWithFullStructure(certificationId: string, userId?: string): Promise<CertificationWithStructure | null> {
   // Get certification with domains, concepts, content items, and user progress
-  const { data, error } = await supabase
+  const query = supabase
     .from('certifications')
     .select(`
       *,
@@ -141,8 +141,13 @@ export async function getCertificationWithFullStructure(certificationId: string,
       )
     `)
     .eq('id', certificationId)
-    .eq('concept_progress.user_id', userId || '')
-    .single()
+
+  // Only filter by user_id if a user is provided
+  if (userId) {
+    query.eq('concept_progress.user_id', userId)
+  }
+
+  const { data, error } = await query.single()
 
   if (error) throw error
   return data as CertificationWithStructure
@@ -153,7 +158,7 @@ export async function getCertificationWithFullStructure(certificationId: string,
 // ============================================
 
 export async function getConceptWithContent(conceptId: string, userId?: string): Promise<ConceptWithContent | null> {
-  const { data, error } = await supabase
+  const query = supabase
     .from('concepts')
     .select(`
       *,
@@ -161,15 +166,20 @@ export async function getConceptWithContent(conceptId: string, userId?: string):
       concept_progress!concept_progress_concept_id_fkey (*)
     `)
     .eq('id', conceptId)
-    .eq('concept_progress.user_id', userId || '')
-    .single()
+
+  // Only filter by user_id if a user is provided
+  if (userId) {
+    query.eq('concept_progress.user_id', userId)
+  }
+
+  const { data, error } = await query.single()
 
   if (error) throw error
   return data as ConceptWithContent
 }
 
 export async function getConceptsByDomain(domainId: string, userId?: string): Promise<ConceptWithContent[]> {
-  const { data, error } = await supabase
+  const query = supabase
     .from('concepts')
     .select(`
       *,
@@ -177,7 +187,13 @@ export async function getConceptsByDomain(domainId: string, userId?: string): Pr
       concept_progress!concept_progress_concept_id_fkey (*)
     `)
     .eq('domain_id', domainId)
-    .eq('concept_progress.user_id', userId || '')
+
+  // Only filter by user_id if a user is provided
+  if (userId) {
+    query.eq('concept_progress.user_id', userId)
+  }
+
+  const { data, error } = await query
     .order('order_index')
 
   if (error) throw error

@@ -20,11 +20,8 @@ function StudyPathContent() {
       const certs = await getCertifications()
       setCertifications(certs)
       
-      // Auto-select first certification with structured content (Elementary Mathematics)
-      const mathCert = certs.find(c => c.test_code === '160')
-      if (mathCert) {
-        setSelectedCertification(mathCert.id)
-      }
+      // Don't auto-select - let user choose from available certifications
+      console.log('Available certifications:', certs.map(c => ({ id: c.id, name: c.name, test_code: c.test_code })))
     } catch (error) {
       console.error('Error loading certifications:', error)
     } finally {
@@ -71,7 +68,8 @@ function StudyPathContent() {
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {certifications.map((cert) => {
-                const hasStructuredContent = cert.test_code === '160' // Elementary Mathematics
+                // Temporarily make all certifications available for testing
+                const hasStructuredContent = true // cert.test_code === '160' // Elementary Mathematics
                 
                 return (
                   <div

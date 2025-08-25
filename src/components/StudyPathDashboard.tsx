@@ -34,6 +34,11 @@ export default function StudyPathDashboard({ certificationId }: StudyPathDashboa
 
         // Load certification structure and user progress
         const certData = await getCertificationWithFullStructure(certificationId, user.id)
+        
+        if (!certData) {
+          throw new Error('Certification not found')
+        }
+        
         setCertification(certData)
 
         // Load or create study plan
@@ -45,7 +50,12 @@ export default function StudyPathDashboard({ certificationId }: StudyPathDashboa
 
       } catch (err) {
         console.error('Error loading study path data:', err)
-        setError('Failed to load study path. Please try again.')
+        console.error('Error details:', {
+          certificationId,
+          userId: user?.id,
+          error: err
+        })
+        setError(`Failed to load study path: ${err instanceof Error ? err.message : 'Unknown error'}`)
       } finally {
         setLoading(false)
       }
