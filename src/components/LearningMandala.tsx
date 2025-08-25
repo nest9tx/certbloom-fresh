@@ -23,10 +23,14 @@ export default function LearningMandala({ userId, certification }: LearningManda
   const [lastRefresh, setLastRefresh] = useState(Date.now());
 
   const loadLearningGarden = useCallback(async () => {
+    console.log('🌸 Loading learning garden for user:', userId, 'certification:', certification);
+    
     const result = await getUserProgress(userId, certification);
+    console.log('🌸 Progress result:', result);
     
     if (!result.success || !result.progress || result.progress.length === 0) {
       // Seed mandala - ready for growth
+      console.log('🌱 No progress data, showing seed mandala');
       setPetals([]);
       setCenterEnergy(0);
       return;
@@ -34,6 +38,7 @@ export default function LearningMandala({ userId, certification }: LearningManda
 
     // Type assertion for the progress data
     const progressData = result.progress as UserProgress[];
+    console.log('🌸 Processing progress data:', progressData);
 
     // Transform progress data into mandala petals
     const gardenPetals: LearningMandalaPetal[] = progressData.map((p, index) => {
@@ -41,19 +46,22 @@ export default function LearningMandala({ userId, certification }: LearningManda
       let energy: LearningMandalaPetal['energy'];
       let color: string;
 
-      if (mastery < 0.3) {
+      // Enhanced energy mapping based on petal_stage from database
+      if (p.petal_stage === 'radiant' || mastery >= 0.85) {
+        energy = 'radiant';
+        color = '#FDE047'; // Bright golden - fully realized
+      } else if (p.petal_stage === 'blooming' || mastery >= 0.6) {
+        energy = 'blooming';
+        color = '#86EFAC'; // Fresh green - growing strong
+      } else if (p.petal_stage === 'budding' || mastery >= 0.3) {
+        energy = 'budding';
+        color = '#FEF08A'; // Soft yellow - first sprouts
+      } else {
         energy = 'dormant';
         color = '#E5E7EB'; // Gray - seeds waiting
-      } else if (mastery < 0.6) {
-        energy = 'budding';
-        color = '#FEF3C7'; // Soft yellow - first sprouts
-      } else if (mastery < 0.85) {
-        energy = 'blooming';
-        color = '#D1FAE5'; // Fresh green - growing strong
-      } else {
-        energy = 'radiant';
-        color = '#FDE68A'; // Golden - fully realized
       }
+
+      console.log(`🌸 Petal ${index}: ${p.topic} - mastery: ${mastery}, stage: ${p.petal_stage || 'calculated'}, energy: ${energy}`);
 
       return {
         topic: p.topic,
@@ -69,6 +77,8 @@ export default function LearningMandala({ userId, certification }: LearningManda
     // Center energy represents overall learning vitality
     const avgMastery = progressData.reduce((sum, p) => sum + p.mastery_level, 0) / progressData.length;
     setCenterEnergy(avgMastery);
+    
+    console.log('🌸 Mandala updated with', gardenPetals.length, 'petals, center energy:', avgMastery);
   }, [userId, certification]);
 
   useEffect(() => {

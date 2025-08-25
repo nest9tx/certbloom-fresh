@@ -421,13 +421,18 @@ export default function DashboardPage() {
                 </div>
               </div>
               <h3 className="text-lg font-semibold text-green-800 mb-2">Mind & Spirit</h3>
-              <p className="text-blue-600 text-sm">
+              <p className="text-blue-600 text-sm mb-3">
                 {isLoadingDashboard ? 'Loading...' : 
                  dashboardData.stats.wellness_score >= 80 ? 'Excellent balance!' :
                  dashboardData.stats.wellness_score >= 60 ? 'Balanced and focused' :
                  'Building wellness habits'
                 }
               </p>
+              <div className="p-2 bg-blue-50 rounded border border-blue-200">
+                <p className="text-xs text-blue-700">
+                  <strong>Purpose:</strong> Integrates mindfulness practices with learning. Based on session frequency and mindful breaks taken.
+                </p>
+              </div>
             </div>
 
             {/* Certification Progress */}
@@ -435,12 +440,25 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between mb-4">
                 <div className="text-3xl">🎯</div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-yellow-700">68%</div>
+                  <div className="text-2xl font-bold text-yellow-700">
+                    {isLoadingDashboard ? '...' : 
+                     dashboardData.stats.total_questions > 0 ? 
+                     Math.round((dashboardData.stats.accuracy / 100) * 100) : 0}%
+                  </div>
                   <div className="text-sm text-yellow-600">Ready</div>
                 </div>
               </div>
               <h3 className="text-lg font-semibold text-green-800 mb-2">TExES Prep</h3>
-              <p className="text-yellow-600 text-sm">On track for success</p>
+              <p className="text-yellow-600 text-sm mb-3">
+                {isLoadingDashboard ? 'Loading...' : 
+                 userCertificationGoal ? `Preparing for ${userCertificationGoal}` : 'Set your certification goal'
+                }
+              </p>
+              <div className="p-2 bg-yellow-50 rounded border border-yellow-200">
+                <p className="text-xs text-yellow-700">
+                  <strong>Purpose:</strong> Tracks progress toward your specific teaching certification. Updates based on accuracy and topic mastery.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -494,18 +512,15 @@ export default function DashboardPage() {
           <div className="grid lg:grid-cols-3 gap-8 mb-12">
             
             {/* Adaptive Study Session */}
-            <div className="lg:col-span-2 bg-white/90 backdrop-blur-sm rounded-2xl p-8 border border-green-200/60 shadow-xl">
-              <div className="flex items-start justify-between mb-6">
-                <div>
-                  <div className="text-4xl mb-4">🧠</div>
-                  <h3 className="text-2xl font-semibold text-green-800 mb-3">Your Adaptive Study Session</h3>
-                  <p className="text-green-600 mb-4">
-                    Based on your progress and mood, we&apos;ve prepared a personalized 15-minute session focusing on your growth areas.
+                        {/* Your Adaptive Study Session */}
+            <div className="bg-gradient-to-br from-pink-100 to-purple-50 rounded-2xl p-6 border border-purple-200/60 shadow-lg">
+              <div className="flex items-start gap-4 mb-4">
+                <div className="text-4xl">🧠</div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-purple-800 mb-2">Your Adaptive Study Session</h3>
+                  <p className="text-purple-600 text-sm mb-4">
+                    Based on your progress and mood, we&apos;ve prepared a personalized {subscriptionStatus === 'active' ? '15' : '5'}-minute session focusing on your growth areas.
                   </p>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm text-green-500 bg-green-100 px-3 py-1 rounded-full mb-2">Recommended</div>
-                  <div className="text-lg font-semibold text-green-700">15 min</div>
                 </div>
               </div>
 
@@ -513,18 +528,28 @@ export default function DashboardPage() {
                 <div className="text-center p-4 bg-green-50 rounded-xl border border-green-200">
                   <div className="text-2xl mb-2">📚</div>
                   <div className="text-sm font-medium text-green-700">Content Review</div>
-                  <div className="text-xs text-green-600">5 concepts</div>
+                  <div className="text-xs text-green-600">Key concepts</div>
                 </div>
                 <div className="text-center p-4 bg-orange-50 rounded-xl border border-orange-200">
                   <div className="text-2xl mb-2">❓</div>
                   <div className="text-sm font-medium text-orange-700">Practice Questions</div>
-                  <div className="text-xs text-orange-600">8 questions</div>
+                  <div className="text-xs text-orange-600">{subscriptionStatus === 'active' ? '10-15' : '5'} questions</div>
                 </div>
                 <div className="text-center p-4 bg-blue-50 rounded-xl border border-blue-200">
                   <div className="text-2xl mb-2">🧘</div>
                   <div className="text-sm font-medium text-blue-700">Mindful Break</div>
                   <div className="text-xs text-blue-600">2 minutes</div>
                 </div>
+              </div>
+
+              <div className="mb-4 p-3 bg-purple-50 rounded-lg border border-purple-200">
+                <p className="text-xs text-purple-600">
+                  <strong>Session Purpose:</strong> Adaptive learning that adjusts to your understanding level. 
+                  {subscriptionStatus === 'free' 
+                    ? ' Free accounts receive 5 focused questions.' 
+                    : ' Pro members get extended 15-question sessions with detailed explanations.'
+                  }
+                </p>
               </div>
 
               <Link 
@@ -556,9 +581,14 @@ export default function DashboardPage() {
               <div className="bg-gradient-to-br from-orange-100 to-yellow-50 rounded-2xl p-6 border border-orange-200/60 shadow-lg">
                 <div className="text-3xl mb-3">⚡</div>
                 <h4 className="text-lg font-semibold text-green-800 mb-2">Quick Practice</h4>
-                <p className="text-green-600 text-sm mb-4">
+                <p className="text-green-600 text-sm mb-3">
                   5 targeted questions to keep your momentum going.
                 </p>
+                <div className="mb-4 p-2 bg-orange-50 rounded border border-orange-200">
+                  <p className="text-xs text-orange-700">
+                    <strong>Purpose:</strong> Short practice sessions for busy schedules. Perfect for maintaining consistency without time pressure.
+                  </p>
+                </div>
                 <Link 
                   href="/practice/session?type=quick&length=5"
                   className="block w-full py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-xl hover:from-orange-600 hover:to-yellow-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 text-center"
