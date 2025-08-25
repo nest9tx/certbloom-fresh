@@ -2,26 +2,18 @@
 
 import React, { useState, useEffect } from 'react'
 import { getCertifications, Certification } from '@/lib/conceptLearning'
-import { useAuth } from '@/lib/auth-context'
+import { useAuth } from '../../../lib/auth-context'
 import StudyPathDashboard from '@/components/StudyPathDashboard'
 
-export default function StudyPathPage() {
+function StudyPathContent() {
   const { user } = useAuth()
   const [certifications, setCertifications] = useState<Certification[]>([])
   const [selectedCertification, setSelectedCertification] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [mounted, setMounted] = useState(false)
 
-  // Handle hydration mismatch
   useEffect(() => {
-    setMounted(true)
+    loadCertifications()
   }, [])
-
-  useEffect(() => {
-    if (mounted) {
-      loadCertifications()
-    }
-  }, [mounted])
 
   const loadCertifications = async () => {
     try {
@@ -40,13 +32,12 @@ export default function StudyPathPage() {
     }
   }
 
-  // Prevent hydration mismatch by not rendering auth-dependent content on server
-  if (!mounted) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">Loading certifications...</p>
         </div>
       </div>
     )
@@ -58,17 +49,6 @@ export default function StudyPathPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Sign In Required</h1>
           <p className="text-gray-600">Please sign in to access your personalized study paths.</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading certifications...</p>
         </div>
       </div>
     )
@@ -178,4 +158,25 @@ export default function StudyPathPage() {
       </div>
     </div>
   )
+}
+
+export default function StudyPathPage() {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return <StudyPathContent />
 }

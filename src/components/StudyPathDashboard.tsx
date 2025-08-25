@@ -9,7 +9,7 @@ import {
   createStudyPlan,
   getDifficultyLabel 
 } from '@/lib/conceptLearning'
-import { useAuth } from '@/lib/auth-context'
+import { useAuth } from '../../lib/auth-context'
 import ConceptViewer from './ConceptViewer'
 
 interface StudyPathDashboardProps {
