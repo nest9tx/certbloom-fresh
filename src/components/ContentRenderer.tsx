@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { ContentItem, ContentData, recordContentEngagement } from '@/lib/conceptLearning'
+import { ContentItem, ContentData, recordContentEngagement } from '../lib/conceptLearning'
 import { useAuth } from '../../lib/auth-context'
 
 interface ContentRendererProps {

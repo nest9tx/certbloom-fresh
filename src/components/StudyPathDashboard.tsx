@@ -8,7 +8,7 @@ import {
   getUserStudyPlan,
   createStudyPlan,
   getDifficultyLabel 
-} from '@/lib/conceptLearning'
+} from '../lib/conceptLearning'
 import { useAuth } from '../../lib/auth-context'
 import ConceptViewer from './ConceptViewer'
 

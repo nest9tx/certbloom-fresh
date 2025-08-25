@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { getCertifications, Certification } from '@/lib/conceptLearning'
+import { getCertifications, Certification } from '../../lib/conceptLearning'
 import { useAuth } from '../../../lib/auth-context'
 import StudyPathDashboard from '@/components/StudyPathDashboard'
 

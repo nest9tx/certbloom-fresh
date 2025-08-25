@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { ConceptWithContent, updateConceptProgress, getDifficultyLabel } from '@/lib/conceptLearning'
+import { ConceptWithContent, updateConceptProgress, getDifficultyLabel } from '../lib/conceptLearning'
 import { useAuth } from '../../lib/auth-context'
 import ContentRenderer from './ContentRenderer'
 
