@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { UserProgress } from './questionBank';
 
 export interface DashboardStats {
   total_sessions: number;
@@ -6,18 +7,6 @@ export interface DashboardStats {
   total_correct: number;
   accuracy: number;
   wellness_score: number;
-}
-
-export interface UserProgress {
-  topic: string;
-  mastery_level: number;
-  questions_attempted: number;
-  questions_correct: number;
-  last_practiced: string | null;
-  petal_stage: string;
-  bloom_level: string;
-  confidence_trend: number;
-  energy_level: number;
 }
 
 export interface DashboardData {

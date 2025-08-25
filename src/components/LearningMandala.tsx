@@ -1,7 +1,28 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { getUserProgress, UserProgress } from '@/lib/questionBank';
+import { getUserProgress } from '../lib/questionBank';
+
+// Define enhanced UserProgress interface for mandala component
+interface EnhancedUserProgress {
+  id: string;
+  user_id: string;
+  topic: string;
+  mastery_level: number;
+  questions_attempted: number;
+  questions_correct: number;
+  last_practiced: string;
+  streak_days: number;
+  needs_review: boolean;
+  difficulty_preference?: string;
+  created_at: string;
+  updated_at: string;
+  // Sacred mandala fields
+  petal_stage?: 'dormant' | 'budding' | 'blooming' | 'radiant';
+  bloom_level?: 'dim' | 'bright' | 'radiant' | 'luminous';
+  confidence_trend?: number;
+  energy_level?: number;
+}
 
 interface LearningMandalaPetal {
   topic: string;
@@ -36,17 +57,18 @@ export default function LearningMandala({ userId, certification }: LearningManda
       return;
     }
 
-    // Type assertion for the progress data
-    const progressData = result.progress as UserProgress[];
+    // Type assertion for the progress data with sacred fields
+    const progressData = result.progress as EnhancedUserProgress[];
     console.log('🌸 Processing progress data:', progressData);
 
-    // Transform progress data into mandala petals
+    // Transform progress data into mandala petals with explicit typing
     const gardenPetals: LearningMandalaPetal[] = progressData.map((p, index) => {
       const mastery = p.mastery_level;
       let energy: LearningMandalaPetal['energy'];
       let color: string;
 
       // Enhanced energy mapping based on petal_stage from database
+      // Using optional chaining for safety
       if (p.petal_stage === 'radiant' || mastery >= 0.85) {
         energy = 'radiant';
         color = '#FDE047'; // Bright golden - fully realized

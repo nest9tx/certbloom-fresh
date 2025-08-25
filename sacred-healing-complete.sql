@@ -281,6 +281,12 @@ DO $$
 DECLARE
     session_record RECORD;
     processed_count INTEGER := 0;
+    correct_rate DECIMAL;
+    mastery_boost DECIMAL;
+    topic_name TEXT;
+    performance_category TEXT;
+    petal_energy TEXT;
+    bloom_radiance TEXT;
 BEGIN
     RAISE NOTICE '🌸 Processing existing sessions for mandala growth...';
     
@@ -290,9 +296,127 @@ BEGIN
         AND questions_answered > 0
         AND completed_at > NOW() - INTERVAL '7 days'  -- Only recent sessions
     LOOP
-        -- Trigger the update manually for existing sessions
-        PERFORM update_user_progress_from_session();
+        -- Calculate performance metrics for this session
+        correct_rate := session_record.correct_answers::DECIMAL / session_record.questions_answered::DECIMAL;
+        
+        -- Determine topic name with sacred intention
+        topic_name := CASE 
+            WHEN array_length(session_record.topics_covered, 1) > 0 THEN session_record.topics_covered[1]
+            WHEN session_record.session_type IS NOT NULL THEN session_record.session_type
+            ELSE 'General Practice'
+        END;
+        
+        -- Calculate mastery boost with gentle progression
+        mastery_boost := CASE 
+            WHEN correct_rate >= 0.9 THEN 0.15   -- Luminous: +15%
+            WHEN correct_rate >= 0.8 THEN 0.1    -- Excellent: +10%
+            WHEN correct_rate >= 0.6 THEN 0.05   -- Good: +5%
+            WHEN correct_rate >= 0.4 THEN 0.02   -- Fair: +2%
+            ELSE -0.01                            -- Gentle learning: -1%
+        END;
+        
+        -- Performance category with compassion
+        performance_category := CASE 
+            WHEN correct_rate >= 0.9 THEN 'luminous'
+            WHEN correct_rate >= 0.8 THEN 'excellent'
+            WHEN correct_rate >= 0.6 THEN 'good'
+            WHEN correct_rate >= 0.4 THEN 'fair'
+            ELSE 'growing'
+        END;
+        
+        -- Sacred petal stage based on overall accuracy
+        petal_energy := CASE 
+            WHEN correct_rate >= 0.85 THEN 'radiant'
+            WHEN correct_rate >= 0.7 THEN 'blooming'
+            WHEN correct_rate >= 0.5 THEN 'budding'
+            ELSE 'dormant'
+        END;
+        
+        -- Bloom level for mandala luminosity
+        bloom_radiance := CASE 
+            WHEN correct_rate >= 0.9 THEN 'luminous'
+            WHEN correct_rate >= 0.8 THEN 'radiant'
+            WHEN correct_rate >= 0.6 THEN 'bright'
+            ELSE 'dim'
+        END;
+        
+        -- Insert or update user progress with sacred intention
+        INSERT INTO user_progress (
+            user_id,
+            topic,
+            mastery_level,
+            questions_attempted,
+            questions_correct,
+            last_practiced,
+            needs_review,
+            difficulty_preference,
+            petal_stage,
+            bloom_level,
+            confidence_trend,
+            energy_level,
+            created_at,
+            updated_at
+        ) VALUES (
+            session_record.user_id,
+            topic_name,
+            GREATEST(0.0, LEAST(1.0, 0.2 + mastery_boost)),
+            session_record.questions_answered,
+            session_record.correct_answers,
+            session_record.completed_at,
+            (correct_rate < 0.6),
+            performance_category,
+            petal_energy,
+            bloom_radiance,
+            correct_rate,
+            LEAST(1.0, correct_rate + 0.1),
+            NOW(),
+            NOW()
+        ) ON CONFLICT (user_id, topic) 
+        DO UPDATE SET
+            mastery_level = GREATEST(0.0, LEAST(1.0, 
+                user_progress.mastery_level + (mastery_boost * 0.8)  -- Gentle progressive growth
+            )),
+            questions_attempted = user_progress.questions_attempted + session_record.questions_answered,
+            questions_correct = user_progress.questions_correct + session_record.correct_answers,
+            last_practiced = session_record.completed_at,
+            needs_review = (
+                (user_progress.questions_correct + session_record.correct_answers)::DECIMAL / 
+                (user_progress.questions_attempted + session_record.questions_answered)::DECIMAL
+            ) < 0.6,
+            difficulty_preference = performance_category,
+            petal_stage = CASE 
+                WHEN (user_progress.questions_correct + session_record.correct_answers)::DECIMAL / 
+                     (user_progress.questions_attempted + session_record.questions_answered)::DECIMAL >= 0.85 THEN 'radiant'
+                WHEN (user_progress.questions_correct + session_record.correct_answers)::DECIMAL / 
+                     (user_progress.questions_attempted + session_record.questions_answered)::DECIMAL >= 0.7 THEN 'blooming'
+                WHEN (user_progress.questions_correct + session_record.correct_answers)::DECIMAL / 
+                     (user_progress.questions_attempted + session_record.questions_answered)::DECIMAL >= 0.5 THEN 'budding'
+                ELSE 'dormant'
+            END,
+            bloom_level = CASE 
+                WHEN (user_progress.questions_correct + session_record.correct_answers)::DECIMAL / 
+                     (user_progress.questions_attempted + session_record.questions_answered)::DECIMAL >= 0.9 THEN 'luminous'
+                WHEN (user_progress.questions_correct + session_record.correct_answers)::DECIMAL / 
+                     (user_progress.questions_attempted + session_record.questions_answered)::DECIMAL >= 0.8 THEN 'radiant'
+                WHEN (user_progress.questions_correct + session_record.correct_answers)::DECIMAL / 
+                     (user_progress.questions_attempted + session_record.questions_answered)::DECIMAL >= 0.6 THEN 'bright'
+                ELSE 'dim'
+            END,
+            confidence_trend = (
+                (user_progress.questions_correct + session_record.correct_answers)::DECIMAL / 
+                (user_progress.questions_attempted + session_record.questions_answered)::DECIMAL
+            ),
+            energy_level = LEAST(1.0, (
+                (user_progress.questions_correct + session_record.correct_answers)::DECIMAL / 
+                (user_progress.questions_attempted + session_record.questions_answered)::DECIMAL
+            ) + 0.1),
+            updated_at = NOW();
+        
         processed_count := processed_count + 1;
+        
+        -- Sacred log for conscious awareness
+        RAISE NOTICE '🌸 Sacred Progress Updated: user=%, topic=%, petal_stage=%, bloom_level=%, questions=%/%', 
+                     session_record.user_id, topic_name, petal_energy, bloom_radiance, session_record.correct_answers, session_record.questions_answered;
     END LOOP;
     
     RAISE NOTICE '🌸 Processed % recent sessions for mandala growth', processed_count;
