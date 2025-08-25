@@ -125,32 +125,88 @@ export async function getCertifications(): Promise<Certification[]> {
   return data || []
 }
 
+// Raw Supabase response types
+interface SupabaseConceptResponse {
+  id: string
+  [key: string]: unknown
+}
+
+interface SupabaseDomainResponse {
+  id: string
+  concepts?: SupabaseConceptResponse[]
+  [key: string]: unknown
+}
+
+interface SupabaseCertResponse {
+  id: string
+  domains?: SupabaseDomainResponse[]
+  [key: string]: unknown
+}
+
 export async function getCertificationWithFullStructure(certificationId: string, userId?: string): Promise<CertificationWithStructure | null> {
-  // Get certification with domains, concepts, content items, and user progress
-  const query = supabase
-    .from('certifications')
-    .select(`
-      *,
-      domains (
+  try {
+    // Step 1: Get certification with domains and concepts
+    const { data: certData, error: certError } = await supabase
+      .from('certifications')
+      .select(`
         *,
-        concepts (
+        domains (
           *,
-          content_items (*),
-          concept_progress!concept_progress_concept_id_fkey (*)
+          concepts (
+            *,
+            content_items (*)
+          )
         )
-      )
-    `)
-    .eq('id', certificationId)
+      `)
+      .eq('id', certificationId)
+      .single()
 
-  // Only filter by user_id if a user is provided
-  if (userId) {
-    query.eq('concept_progress.user_id', userId)
+    if (certError) {
+      console.error('Error fetching certification structure:', certError)
+      throw certError
+    }
+
+    if (!certData) {
+      return null
+    }
+
+    // Step 2: If userId provided, get user progress for all concepts
+    if (userId && certData.domains) {
+      const rawCertData = certData as SupabaseCertResponse
+      const conceptIds = (rawCertData.domains || [])
+        .flatMap((domain: SupabaseDomainResponse) => domain.concepts || [])
+        .map((concept: SupabaseConceptResponse) => concept.id)
+
+      if (conceptIds.length > 0) {
+        const { data: progressData, error: progressError } = await supabase
+          .from('concept_progress')
+          .select('*')
+          .eq('user_id', userId)
+          .in('concept_id', conceptIds)
+
+        if (progressError) {
+          console.error('Error fetching user progress:', progressError)
+          // Don't throw - just continue without progress data
+        } else {
+          // Attach progress data to concepts
+          const progressMap = new Map(progressData?.map(p => [p.concept_id, p]) || [])
+          
+          ;(rawCertData.domains || []).forEach((domain: SupabaseDomainResponse) => {
+            if (domain.concepts) {
+              domain.concepts.forEach((concept: SupabaseConceptResponse) => {
+                ;(concept as SupabaseConceptResponse & { concept_progress?: unknown[] }).concept_progress = progressMap.get(concept.id) ? [progressMap.get(concept.id)] : []
+              })
+            }
+          })
+        }
+      }
+    }
+
+    return certData as CertificationWithStructure
+  } catch (error) {
+    console.error('Unexpected error in getCertificationWithFullStructure:', error)
+    throw error
   }
-
-  const { data, error } = await query.single()
-
-  if (error) throw error
-  return data as CertificationWithStructure
 }
 
 // ============================================
@@ -158,46 +214,99 @@ export async function getCertificationWithFullStructure(certificationId: string,
 // ============================================
 
 export async function getConceptWithContent(conceptId: string, userId?: string): Promise<ConceptWithContent | null> {
-  const query = supabase
-    .from('concepts')
-    .select(`
-      *,
-      content_items (*),
-      concept_progress!concept_progress_concept_id_fkey (*)
-    `)
-    .eq('id', conceptId)
+  try {
+    // Step 1: Get concept with content items
+    const { data: conceptData, error: conceptError } = await supabase
+      .from('concepts')
+      .select(`
+        *,
+        content_items (*)
+      `)
+      .eq('id', conceptId)
+      .single()
 
-  // Only filter by user_id if a user is provided
-  if (userId) {
-    query.eq('concept_progress.user_id', userId)
+    if (conceptError) {
+      console.error('Error fetching concept:', conceptError)
+      throw conceptError
+    }
+
+    if (!conceptData) {
+      return null
+    }
+
+    // Step 2: Get user progress if userId provided
+    if (userId) {
+      const { data: progressData, error: progressError } = await supabase
+        .from('concept_progress')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('concept_id', conceptId)
+        .maybeSingle()
+
+      if (progressError) {
+        console.error('Error fetching concept progress:', progressError)
+        // Continue without progress data
+      } else {
+        conceptData.concept_progress = progressData ? [progressData] : []
+      }
+    }
+
+    return conceptData as ConceptWithContent
+  } catch (error) {
+    console.error('Unexpected error in getConceptWithContent:', error)
+    throw error
   }
-
-  const { data, error } = await query.single()
-
-  if (error) throw error
-  return data as ConceptWithContent
 }
 
 export async function getConceptsByDomain(domainId: string, userId?: string): Promise<ConceptWithContent[]> {
-  const query = supabase
-    .from('concepts')
-    .select(`
-      *,
-      content_items (*),
-      concept_progress!concept_progress_concept_id_fkey (*)
-    `)
-    .eq('domain_id', domainId)
+  try {
+    // Step 1: Get concepts with content items
+    const { data: conceptsData, error: conceptsError } = await supabase
+      .from('concepts')
+      .select(`
+        *,
+        content_items (*)
+      `)
+      .eq('domain_id', domainId)
+      .order('order_index')
 
-  // Only filter by user_id if a user is provided
-  if (userId) {
-    query.eq('concept_progress.user_id', userId)
+    if (conceptsError) {
+      console.error('Error fetching concepts:', conceptsError)
+      throw conceptsError
+    }
+
+    if (!conceptsData) {
+      return []
+    }
+
+    // Step 2: Get user progress if userId provided
+    if (userId && conceptsData.length > 0) {
+      const conceptIds = conceptsData.map(concept => concept.id)
+      
+      const { data: progressData, error: progressError } = await supabase
+        .from('concept_progress')
+        .select('*')
+        .eq('user_id', userId)
+        .in('concept_id', conceptIds)
+
+      if (progressError) {
+        console.error('Error fetching concepts progress:', progressError)
+        // Continue without progress data
+      } else {
+        // Attach progress data to concepts
+        const progressMap = new Map(progressData?.map(p => [p.concept_id, p]) || [])
+        
+        conceptsData.forEach((concept: SupabaseConceptResponse) => {
+          ;(concept as SupabaseConceptResponse & { concept_progress?: unknown[] }).concept_progress = progressMap.get(concept.id) ? [progressMap.get(concept.id)] : []
+        })
+      }
+    }
+
+    return conceptsData as ConceptWithContent[]
+  } catch (error) {
+    console.error('Unexpected error in getConceptsByDomain:', error)
+    throw error
   }
-
-  const { data, error } = await query
-    .order('order_index')
-
-  if (error) throw error
-  return data as ConceptWithContent[]
 }
 
 // ============================================

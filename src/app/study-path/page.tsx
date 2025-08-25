@@ -67,9 +67,9 @@ function StudyPathContent() {
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {certifications.map((cert) => {
-                // Temporarily make all certifications available for testing
-                const hasStructuredContent = true // cert.test_code === '160' // Elementary Mathematics
+              {certifications.filter(cert => cert.test_code === '160').map((cert) => {
+                // Only show certifications with structured content
+                const hasStructuredContent = true
                 
                 return (
                   <div
@@ -122,18 +122,28 @@ function StudyPathContent() {
             {/* Demo Info */}
             <div className="mt-12 bg-blue-50 border border-blue-200 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-blue-900 mb-2">
-                🚀 Welcome to the New CertBloom Experience!
+                🚀 Welcome to CertBloom's Concept-Based Learning!
               </h3>
               <p className="text-blue-800 mb-4">
-                We&apos;ve transformed from random question practice to structured, concept-based learning. 
-                Currently featuring Elementary Mathematics (EC-6) with:
+                We&apos;ve transformed from random question practice to structured, mastery-based learning. 
+                Currently available: <strong>Elementary Mathematics (EC-6)</strong> with:
               </p>
               <ul className="list-disc list-inside text-blue-700 space-y-1 mb-4">
-                <li>Organized learning domains and concepts</li>
-                <li>Multi-modal content (explanations, examples, practice)</li>
-                <li>Progress tracking and mastery levels</li>
-                <li>Personalized study recommendations</li>
+                <li><strong>3 Learning Domains:</strong> Number Operations, Patterns & Algebra, Geometry</li>
+                <li><strong>6 Core Concepts:</strong> From place value to area & perimeter</li>
+                <li><strong>Multi-Modal Content:</strong> Explanations, examples, practice, real-world scenarios</li>
+                <li><strong>Progress Tracking:</strong> Mastery levels and personalized recommendations</li>
               </ul>
+              
+              {certifications.filter(cert => cert.test_code === '160').length === 0 && (
+                <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-4 mt-4">
+                  <p className="text-yellow-800">
+                    <strong>🔧 Setup Required:</strong> The Elementary Mathematics certification needs to be added to your database. 
+                    Please run the concept-learning-schema.sql file in your Supabase SQL Editor first.
+                  </p>
+                </div>
+              )}
+              
               <p className="text-sm text-blue-600">
                 More certifications will be migrated to this new system soon!
               </p>

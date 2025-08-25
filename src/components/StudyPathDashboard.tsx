@@ -39,6 +39,11 @@ export default function StudyPathDashboard({ certificationId }: StudyPathDashboa
           throw new Error('Certification not found')
         }
         
+        // Check if certification has structured content
+        if (!certData.domains || certData.domains.length === 0) {
+          throw new Error('This certification does not have structured learning content yet. Please try "Elementary Mathematics (EC-6)" which has full concept-based learning available.')
+        }
+        
         setCertification(certData)
 
         // Load or create study plan
