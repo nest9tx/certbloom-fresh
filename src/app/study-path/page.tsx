@@ -10,10 +10,18 @@ export default function StudyPathPage() {
   const [certifications, setCertifications] = useState<Certification[]>([])
   const [selectedCertification, setSelectedCertification] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
+
+  // Handle hydration mismatch
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
-    loadCertifications()
-  }, [])
+    if (mounted) {
+      loadCertifications()
+    }
+  }, [mounted])
 
   const loadCertifications = async () => {
     try {
@@ -30,6 +38,18 @@ export default function StudyPathPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Prevent hydration mismatch by not rendering auth-dependent content on server
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   if (!user) {
