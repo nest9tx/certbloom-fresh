@@ -191,7 +191,8 @@ export default function PracticeSessionPage() {
       };
       
       recordQuestionAttempt(user.id, sessionId, attempt).catch((error: Error) => {
-        console.error('Error recording question attempt:', error);
+        // Log error but don't disrupt user experience
+        console.warn('⚠️ Question attempt not recorded:', error.message);
       });
     }
   };

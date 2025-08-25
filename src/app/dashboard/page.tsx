@@ -233,12 +233,10 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50 relative">
-      {/* Floating Wellness Elements */}
+      {/* Subtle Background Elements - Contained */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 animate-pulse text-green-300 opacity-20 text-4xl">🌸</div>
-        <div className="absolute top-40 right-20 animate-pulse text-orange-300 opacity-20 text-3xl" style={{animationDelay: '1s'}}>🍃</div>
-        <div className="absolute bottom-32 left-1/4 animate-pulse text-yellow-300 opacity-20 text-5xl" style={{animationDelay: '2s'}}>✨</div>
-        <div className="absolute top-1/3 right-10 animate-pulse text-green-300 opacity-20 text-4xl" style={{animationDelay: '0.5s'}}>🌱</div>
+        <div className="absolute top-20 left-10 animate-pulse text-green-300 opacity-10 text-2xl">🌸</div>
+        <div className="absolute bottom-32 left-1/4 animate-pulse text-yellow-300 opacity-10 text-3xl" style={{animationDelay: '2s'}}>✨</div>
       </div>
 
       {/* Navigation */}
@@ -344,7 +342,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Progress Overview */}
-          <div className="grid lg:grid-cols-4 gap-6 mb-12">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
             {/* Certification Goal */}
             <div className="bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl p-6 border border-blue-200/60 shadow-lg">
               <div className="flex items-center justify-between mb-4">
@@ -408,58 +406,6 @@ export default function DashboardPage() {
                 ></div>
               </div>
             </div>
-
-            {/* Wellness Score */}
-            <div className="bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl p-6 border border-blue-200/60 shadow-lg">
-              <div className="flex items-center justify-between mb-4">
-                <div className="text-3xl">🧘‍♀️</div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-blue-700">
-                    {isLoadingDashboard ? '...' : dashboardData.stats.wellness_score}
-                  </div>
-                  <div className="text-sm text-blue-600">Wellness</div>
-                </div>
-              </div>
-              <h3 className="text-lg font-semibold text-green-800 mb-2">Mind & Spirit</h3>
-              <p className="text-blue-600 text-sm mb-3">
-                {isLoadingDashboard ? 'Loading...' : 
-                 dashboardData.stats.wellness_score >= 80 ? 'Excellent balance!' :
-                 dashboardData.stats.wellness_score >= 60 ? 'Balanced and focused' :
-                 'Building wellness habits'
-                }
-              </p>
-              <div className="p-2 bg-blue-50 rounded border border-blue-200">
-                <p className="text-xs text-blue-700">
-                  <strong>Purpose:</strong> Integrates mindfulness practices with learning. Based on session frequency and mindful breaks taken.
-                </p>
-              </div>
-            </div>
-
-            {/* Certification Progress */}
-            <div className="bg-gradient-to-br from-yellow-100 to-yellow-50 rounded-2xl p-6 border border-yellow-200/60 shadow-lg">
-              <div className="flex items-center justify-between mb-4">
-                <div className="text-3xl">🎯</div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-yellow-700">
-                    {isLoadingDashboard ? '...' : 
-                     dashboardData.stats.total_questions > 0 ? 
-                     Math.round((dashboardData.stats.accuracy / 100) * 100) : 0}%
-                  </div>
-                  <div className="text-sm text-yellow-600">Ready</div>
-                </div>
-              </div>
-              <h3 className="text-lg font-semibold text-green-800 mb-2">TExES Prep</h3>
-              <p className="text-yellow-600 text-sm mb-3">
-                {isLoadingDashboard ? 'Loading...' : 
-                 userCertificationGoal ? `Preparing for ${userCertificationGoal}` : 'Set your certification goal'
-                }
-              </p>
-              <div className="p-2 bg-yellow-50 rounded border border-yellow-200">
-                <p className="text-xs text-yellow-700">
-                  <strong>Purpose:</strong> Tracks progress toward your specific teaching certification. Updates based on accuracy and topic mastery.
-                </p>
-              </div>
-            </div>
           </div>
 
           {/* Adaptive Learning Garden - Co-Creative Intelligence */}
@@ -509,12 +455,11 @@ export default function DashboardPage() {
           )}
 
           {/* Main Action Grid */}
-          <div className="grid lg:grid-cols-3 gap-8 mb-12">
+          <div className="grid lg:grid-cols-2 gap-8 mb-12">
             
-            {/* Adaptive Study Session */}
-                        {/* Your Adaptive Study Session */}
-            <div className="bg-gradient-to-br from-pink-100 to-purple-50 rounded-2xl p-6 border border-purple-200/60 shadow-lg">
-              <div className="flex items-start gap-4 mb-4">
+            {/* Adaptive Study Session - Full Width */}
+            <div className="lg:col-span-1 bg-gradient-to-br from-pink-100 to-purple-50 rounded-2xl p-8 border border-purple-200/60 shadow-lg">
+              <div className="flex items-start gap-4 mb-6">
                 <div className="text-4xl">🧠</div>
                 <div className="flex-1">
                   <h3 className="text-xl font-bold text-purple-800 mb-2">Your Adaptive Study Session</h3>
@@ -542,7 +487,7 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="mb-4 p-3 bg-purple-50 rounded-lg border border-purple-200">
+              <div className="mb-6 p-3 bg-purple-50 rounded-lg border border-purple-200">
                 <p className="text-xs text-purple-600">
                   <strong>Session Purpose:</strong> Adaptive learning that adjusts to your understanding level. 
                   {subscriptionStatus === 'free' 
@@ -562,11 +507,11 @@ export default function DashboardPage() {
 
             {/* Quick Actions */}
             <div className="space-y-6">
-              {/* Wellness Check */}
+              {/* Breathing Exercise */}
               <div className="bg-gradient-to-br from-blue-100 to-purple-50 rounded-2xl p-6 border border-blue-200/60 shadow-lg">
                 <div className="text-3xl mb-3">🌸</div>
-                <h4 className="text-lg font-semibold text-green-800 mb-2">Breathing Exercise</h4>
-                <p className="text-green-600 text-sm mb-4">
+                <h4 className="text-lg font-semibold text-blue-800 mb-2">Breathing Exercise</h4>
+                <p className="text-blue-600 text-sm mb-4">
                   Take a moment to center yourself with guided breathing.
                 </p>
                 <button 
@@ -580,14 +525,12 @@ export default function DashboardPage() {
               {/* Quick Practice */}
               <div className="bg-gradient-to-br from-orange-100 to-yellow-50 rounded-2xl p-6 border border-orange-200/60 shadow-lg">
                 <div className="text-3xl mb-3">⚡</div>
-                <h4 className="text-lg font-semibold text-green-800 mb-2">Quick Practice</h4>
-                <p className="text-green-600 text-sm mb-3">
+                <h4 className="text-lg font-semibold text-orange-800 mb-2">Quick Practice</h4>
+                <p className="text-orange-600 text-sm mb-3">
                   5 targeted questions to keep your momentum going.
                 </p>
-                <div className="mb-4 p-2 bg-orange-50 rounded border border-orange-200">
-                  <p className="text-xs text-orange-700">
-                    <strong>Purpose:</strong> Short practice sessions for busy schedules. Perfect for maintaining consistency without time pressure.
-                  </p>
+                <div className="text-xs text-orange-700 mb-4">
+                  <strong>Purpose:</strong> Short practice sessions for busy schedules. Perfect for maintaining consistency without time pressure.
                 </div>
                 <Link 
                   href="/practice/session?type=quick&length=5"
@@ -595,21 +538,6 @@ export default function DashboardPage() {
                 >
                   Quick Quiz
                 </Link>
-              </div>
-
-              {/* Progress Review */}
-              <div className="bg-gradient-to-br from-green-100 to-teal-50 rounded-2xl p-6 border border-green-200/60 shadow-lg">
-                <div className="text-3xl mb-3">📈</div>
-                <h4 className="text-lg font-semibold text-green-800 mb-2">Growth Insights</h4>
-                <p className="text-green-600 text-sm mb-4">
-                  See how far you&apos;ve come and celebrate your progress.
-                </p>
-                <button 
-                  onClick={() => router.push('/analytics')}
-                  className="w-full py-3 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-xl hover:from-green-600 hover:to-teal-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-                >
-                  View Insights
-                </button>
               </div>
             </div>
           </div>

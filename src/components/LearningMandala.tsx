@@ -330,6 +330,21 @@ export default function LearningMandala({ userId, certification }: LearningManda
         <p className="text-purple-700 font-medium mb-2">
           {getWisdomMessage()}
         </p>
+        
+        {/* Manual Refresh Button */}
+        <div className="flex justify-center mb-3">
+          <button
+            onClick={() => {
+              console.log('🔄 Manual mandala refresh triggered');
+              setLastRefresh(Date.now());
+              loadLearningGarden();
+            }}
+            className="px-3 py-1 text-xs bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition-colors border border-purple-200"
+          >
+            🔄 Refresh Garden
+          </button>
+        </div>
+        
         <div className="flex justify-center space-x-4 text-sm text-gray-500">
           <span className="flex items-center">
             <div className="w-3 h-3 bg-gray-200 rounded-full mr-1"></div>
