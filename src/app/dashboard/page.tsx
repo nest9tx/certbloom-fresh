@@ -19,6 +19,11 @@ export default function DashboardPage() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'canceled' | 'free'>('free');
   const [userCertificationGoal, setUserCertificationGoal] = useState<string | null>(null);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [structuredLearningPath, setStructuredLearningPath] = useState<{
+    hasStructuredPath: boolean;
+    certificationName?: string;
+    certificationId?: string;
+  }>({ hasStructuredPath: false });
   
   // Real dashboard data
   const [dashboardData, setDashboardData] = useState<DashboardData>({
@@ -66,16 +71,26 @@ export default function DashboardPage() {
         const { getSubscriptionStatus } = await import('../../lib/getSubscriptionStatus');
         const { getUserCertificationGoal } = await import('../../lib/getUserCertificationGoal');
         const { getDashboardData } = await import('../../lib/getDashboardData');
+        const { getUserPrimaryLearningPath } = await import('../../lib/learningPathBridge');
         
-        const [status, certificationGoal, dashboardStats] = await Promise.all([
+        const [status, certificationGoal, dashboardStats, learningPath] = await Promise.all([
           getSubscriptionStatus(user.id),
           getUserCertificationGoal(user.id),
-          getDashboardData(user.id)
+          getDashboardData(user.id),
+          getUserPrimaryLearningPath(user.id)
         ]);
         
-        console.log('📋 Fetched user data:', { status, certificationGoal, dashboardStats });
+        console.log('📋 Fetched user data:', { status, certificationGoal, dashboardStats, learningPath });
         setSubscriptionStatus(status);
         setUserCertificationGoal(certificationGoal);
+        
+        // Store structured learning path info
+        setStructuredLearningPath(learningPath);
+        
+        // If user has structured learning available, gently guide them there
+        if (learningPath.hasStructuredPath) {
+          console.log('🌸 User has structured learning path available:', learningPath.certificationName);
+        }
         
         if (dashboardStats) {
           setDashboardData(dashboardStats);
@@ -407,6 +422,41 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+
+          {/* Structured Learning Path Invitation */}
+          {structuredLearningPath.hasStructuredPath && (
+            <div className="mb-8">
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-2xl p-6 shadow-lg">
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-2xl">🌸</span>
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                      ✨ Structured Learning Path Available
+                    </h3>
+                    <p className="text-blue-800 mb-4">
+                      Your <strong>{structuredLearningPath.certificationName || userCertificationGoal}</strong> certification 
+                      now has concept-based learning with organized domains, mastery tracking, and personalized recommendations.
+                    </p>
+                    <div className="flex space-x-3">
+                      <Link 
+                        href="/study-path"
+                        className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        Begin Structured Learning →
+                      </Link>
+                      <button className="inline-flex items-center px-4 py-2 bg-white text-blue-600 text-sm font-medium rounded-lg border border-blue-300 hover:bg-blue-50 transition-colors">
+                        Continue Here
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Adaptive Learning Garden - Co-Creative Intelligence */}
           {userCertificationGoal && user && (
