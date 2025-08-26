@@ -122,7 +122,7 @@ function StudyPathContent() {
             {/* Demo Info */}
             <div className="mt-12 bg-blue-50 border border-blue-200 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-blue-900 mb-2">
-                🚀 Welcome to CertBloom's Concept-Based Learning!
+                🚀 Welcome to CertBloom&apos;s Concept-Based Learning!
               </h3>
               <p className="text-blue-800 mb-4">
                 We&apos;ve transformed from random question practice to structured, mastery-based learning. 
