@@ -46,35 +46,40 @@
 - ✅ Authentication context resolved
 - ✅ TypeScript compilation without errors
 - ✅ Database schema creation (tables, indexes, RLS policies)
+- ✅ **Dashboard cleaned up** - Removed rapid-fire elements, added concept-based focus
+- ✅ **Free vs. Paid tiers** - Clear distinction in UI and feature access
 
 ### Current Challenge
-- 🔧 **Sample Data Insertion** - Matching existing table schema
-- 🔧 **Schema Alignment** - Your existing tables have different column structures than our new schema
+- 🔧 **Sample Data Integration** - Connect real concept progress to dashboard metrics
+- 🔧 **Content Creation Pipeline** - Admin dashboard for structured content upload
 
-### Discovered Schema Differences
-1. **Certifications Table**: Missing `updated_at` column
-2. **Domains Table**: Has `code` column (NOT NULL)
-3. **Content Items Table**: Uses `type` column instead of `content_type`
+### Recent Updates
+1. **Dashboard Cleanup**: Removed old rapid-fire question elements
+2. **Concept-Based UI**: Progress cards now show concept mastery instead of question stats  
+3. **Subscription Tiers**: Clear free vs. pro distinction with upgrade prompts
+4. **Structured Learning Focus**: Primary CTA leads to /study-path instead of random practice
 
 ## 🎯 Next Steps & Roadmap
 
 ### Phase 1: Foundation (Current)
 - [x] Frontend component architecture
 - [x] Database schema design
-- [ ] **Sample data insertion** (fixing schema mismatches)
-- [ ] End-to-end testing of concept-based learning flow
+- [x] **Dashboard redesign** - Concept-based learning focus
+- [x] **Free vs. Paid tier implementation** - UI distinctions and upgrade paths
+- [ ] **Admin dashboard** - Content creation interface
+- [ ] **Question format alignment** - Match new concept-based structure
 
-### Phase 2: Content Enhancement
-- [ ] Rich content creation tools
-- [ ] Advanced progress tracking
-- [ ] Adaptive learning algorithms
-- [ ] Content recommendation engine
+### Phase 2: Content Pipeline
+- [ ] **Bulk content import tools** - CSV/JSON templates for structured upload
+- [ ] **AI-assisted content generation** - Templates for 7 content types
+- [ ] **Content validation system** - Ensure quality and alignment
+- [ ] **Progress integration** - Connect real user progress to dashboard metrics
 
-### Phase 3: User Experience
-- [ ] Personalized study plans
-- [ ] Performance analytics
-- [ ] Mobile optimization
-- [ ] Offline capability
+### Phase 3: Enhanced Learning Experience  
+- [ ] **Adaptive recommendations** - Personalized next concept suggestions
+- [ ] **Performance analytics** - Detailed progress insights
+- [ ] **Mobile optimization** - Responsive design improvements
+- [ ] **Offline capability** - Progressive web app features
 
 ### Phase 4: Advanced Features
 - [ ] AI-powered content generation
