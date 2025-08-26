@@ -89,7 +89,7 @@ function StudyPathContent() {
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {certifications.filter(cert => cert.test_code === '160').map((cert) => {
+              {certifications.filter(cert => cert.test_code === '902').map((cert) => {
                 // Only show certifications with structured content
                 const hasStructuredContent = true
                 
@@ -157,7 +157,7 @@ function StudyPathContent() {
                 <li><strong>Progress Tracking:</strong> Mastery levels and personalized recommendations</li>
               </ul>
               
-              {certifications.filter(cert => cert.test_code === '160').length === 0 && (
+              {certifications.filter(cert => cert.test_code === '902').length === 0 && (
                 <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-4 mt-4">
                   <p className="text-yellow-800">
                     <strong>🔧 Setup Required:</strong> The Elementary Mathematics certification needs to be added to your database. 

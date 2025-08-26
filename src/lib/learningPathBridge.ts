@@ -13,9 +13,9 @@ interface UserCertificationSetup {
 
 // Map existing certification names to concept-based learning certification IDs
 const CERTIFICATION_MAPPING = {
-  'Math EC-6': '160', // Maps to Elementary Mathematics (EC-6) test code
-  'TExES Core Subjects EC-6: Mathematics (902)': '160',
-  'Elementary Mathematics': '160'
+  'Math EC-6': '902', // Maps to TExES Core Subjects EC-6: Mathematics (902)
+  'TExES Core Subjects EC-6: Mathematics (902)': '902',
+  'Elementary Mathematics': '902'
   // Add more mappings as we build out other certifications
 }
 
