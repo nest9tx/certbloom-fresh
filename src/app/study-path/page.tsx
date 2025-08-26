@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react'
 import { getCertifications, Certification } from '../../lib/conceptLearning'
 import { useAuth } from '../../../lib/auth-context'
 import StudyPathDashboard from '@/components/StudyPathDashboard'
+import Link from 'next/link'
+import Image from 'next/image'
 
 function StudyPathContent() {
   const { user } = useAuth()
@@ -53,6 +55,26 @@ function StudyPathContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Navigation */}
+      <nav className="bg-white/80 backdrop-blur-md border-b border-green-200/50">
+        <div className="max-w-7xl mx-auto flex items-center justify-between p-6">
+          <Link href="/dashboard" className="flex items-center space-x-3 group">
+            <div className="w-10 h-10 transition-transform group-hover:scale-105">
+              <Image src="/certbloom-logo.svg" alt="CertBloom" width={40} height={40} className="w-full h-full object-contain" />
+            </div>
+            <div className="text-2xl font-light text-green-800 tracking-wide">CertBloom</div>
+          </Link>
+          <div className="hidden md:flex items-center space-x-8">
+            <Link href="/dashboard" className="text-green-700 hover:text-green-900 transition-colors font-medium">
+              ← Dashboard
+            </Link>
+            <Link href="/pricing" className="text-green-700 hover:text-green-900 transition-colors font-medium">Pricing</Link>
+            <Link href="/settings" className="text-green-700 hover:text-green-900 transition-colors font-medium">Settings</Link>
+            <span className="text-green-600 font-medium text-sm">Welcome, {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Learner'}!</span>
+          </div>
+        </div>
+      </nav>
+
       <div className="container mx-auto px-4 py-8">
         {!selectedCertification ? (
           // Certification Selection
