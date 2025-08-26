@@ -15,9 +15,9 @@ const supabaseAdmin = createClient(
 
 // Map existing certification names to concept-based learning certification IDs
 const CERTIFICATION_MAPPING = {
-  'Math EC-6': '160',
-  'TExES Core Subjects EC-6: Mathematics (902)': '160',
-  'Elementary Mathematics': '160'
+  'Math EC-6': '902',
+  'TExES Core Subjects EC-6: Mathematics (902)': '902',
+  'Elementary Mathematics': '902'
   // Add more mappings as we build out other certifications
 } as Record<string, string>
 

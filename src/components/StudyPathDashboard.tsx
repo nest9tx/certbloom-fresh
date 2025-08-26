@@ -23,6 +23,26 @@ export default function StudyPathDashboard({ certificationId }: StudyPathDashboa
   const [selectedConcept, setSelectedConcept] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'canceled' | 'free'>('free')
+
+  // Free tier gets access to first 2 concepts only
+  const FREE_CONCEPT_LIMIT = 2
+
+  useEffect(() => {
+    const loadSubscriptionStatus = async () => {
+      if (user) {
+        try {
+          const { getSubscriptionStatus } = await import('../lib/getSubscriptionStatus')
+          const status = await getSubscriptionStatus(user.id)
+          setSubscriptionStatus(status)
+        } catch (error) {
+          console.error('Error loading subscription status:', error)
+        }
+      }
+    }
+    
+    loadSubscriptionStatus()
+  }, [user])
 
   useEffect(() => {
     const loadDataForEffect = async () => {
@@ -262,29 +282,53 @@ export default function StudyPathDashboard({ certificationId }: StudyPathDashboa
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {domain.concepts
                   .sort((a, b) => a.order_index - b.order_index)
-                  .map((concept) => {
+                  .map((concept, conceptIndex) => {
                     const progress = getConceptProgress(concept.id)
                     const isMastered = progress?.is_mastered || false
                     const masteryLevel = progress?.mastery_level || 0
+                    
+                    // Calculate global concept index across all domains
+                    const domainsBeforeCurrent = certification!.domains.slice(0, certification!.domains.findIndex(d => d.id === domain.id))
+                    const conceptsBeforeCurrent = domainsBeforeCurrent.reduce((total, dom) => total + dom.concepts.length, 0)
+                    const globalConceptIndex = conceptsBeforeCurrent + conceptIndex
+                    
+                    // Check if concept is locked for free users
+                    const isLocked = subscriptionStatus === 'free' && globalConceptIndex >= FREE_CONCEPT_LIMIT
+                    
+                    const handleConceptClick = () => {
+                      if (isLocked) {
+                        // Don't open concept, user needs to upgrade
+                        return
+                      }
+                      setSelectedConcept(concept.id)
+                    }
 
                     return (
-                      <button
-                        key={concept.id}
-                        onClick={() => setSelectedConcept(concept.id)}
-                        className={`text-left p-4 rounded-lg border transition-all hover:shadow-md ${
-                          isMastered
-                            ? 'bg-green-50 border-green-200 hover:border-green-300'
-                            : masteryLevel > 0
-                            ? 'bg-yellow-50 border-yellow-200 hover:border-yellow-300'
-                            : 'bg-gray-50 border-gray-200 hover:border-blue-300'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-medium text-gray-900 pr-2">{concept.name}</h4>
-                          {isMastered && (
-                            <span className="text-green-600 text-xl">✓</span>
-                          )}
-                        </div>
+                      <div key={concept.id} className="relative">
+                        <button
+                          onClick={handleConceptClick}
+                          disabled={isLocked}
+                          className={`w-full text-left p-4 rounded-lg border transition-all ${
+                            isLocked 
+                              ? 'bg-gray-100 border-gray-300 opacity-60 cursor-not-allowed'
+                              : 'hover:shadow-md ' + (
+                                isMastered
+                                  ? 'bg-green-50 border-green-200 hover:border-green-300'
+                                  : masteryLevel > 0
+                                  ? 'bg-yellow-50 border-yellow-200 hover:border-yellow-300'
+                                  : 'bg-gray-50 border-gray-200 hover:border-blue-300'
+                              )
+                          }`}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <h4 className={`font-medium pr-2 ${isLocked ? 'text-gray-500' : 'text-gray-900'}`}>
+                              {concept.name}
+                              {isLocked && <span className="ml-2 text-gray-400">🔒</span>}
+                            </h4>
+                            {isMastered && !isLocked && (
+                              <span className="text-green-600 text-xl">✓</span>
+                            )}
+                          </div>
 
                         {concept.description && (
                           <p className="text-sm text-gray-600 mb-3 line-clamp-2">
@@ -292,29 +336,51 @@ export default function StudyPathDashboard({ certificationId }: StudyPathDashboa
                           </p>
                         )}
 
-                        <div className="space-y-2">
-                          {/* Progress Bar */}
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div
-                              className={`h-2 rounded-full transition-all duration-300 ${
-                                isMastered ? 'bg-green-500' : 'bg-blue-500'
-                              }`}
-                              style={{ width: `${masteryLevel * 100}%` }}
-                            />
-                          </div>
+                                                  {isLocked ? (
+                            <div className="space-y-2">
+                              <div className="text-center p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                <div className="text-blue-600 mb-2">🔒 Upgrade Required</div>
+                                <p className="text-sm text-gray-600 mb-3">
+                                  Unlock all concepts with a Pro subscription
+                                </p>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    // Navigate to pricing page
+                                    window.location.href = '/pricing'
+                                  }}
+                                  className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors"
+                                >
+                                  Upgrade to Pro
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              {/* Progress Bar */}
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div
+                                  className={`h-2 rounded-full transition-all duration-300 ${
+                                    isMastered ? 'bg-green-500' : 'bg-blue-500'
+                                  }`}
+                                  style={{ width: `${masteryLevel * 100}%` }}
+                                />
+                              </div>
 
-                          <div className="flex justify-between text-xs text-gray-500">
-                            <span>{getDifficultyLabel(concept.difficulty_level)}</span>
-                            <span>~{concept.estimated_study_minutes}min</span>
-                          </div>
+                              <div className="flex justify-between text-xs text-gray-500">
+                                <span>{getDifficultyLabel(concept.difficulty_level)}</span>
+                                <span>~{concept.estimated_study_minutes}min</span>
+                              </div>
 
-                          {progress && (
-                            <div className="text-xs text-gray-500">
-                              Studied {progress.times_reviewed} times
+                              {progress && (
+                                <div className="text-xs text-gray-500">
+                                  Studied {progress.times_reviewed} times
+                                </div>
+                              )}
                             </div>
                           )}
-                        </div>
-                      </button>
+                        </button>
+                      </div>
                     )
                   })}
               </div>
