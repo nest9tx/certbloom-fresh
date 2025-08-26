@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import CertificationGoalSelector from '../../components/CertificationGoalSelector';
 
 export default function DashboardPage() {
   const { user, loading, signOut } = useAuth();
@@ -21,6 +22,7 @@ export default function DashboardPage() {
     certificationId?: string;
   }>({ hasStructuredPath: false });
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(true);
+  const [showCertificationSelector, setShowCertificationSelector] = useState(false);
 
   // Check for success parameter from URL (client-side only)
   useEffect(() => {
@@ -85,6 +87,32 @@ export default function DashboardPage() {
       console.error('❌ Sign out error:', error);
     } finally {
       setIsSigningOut(false);
+    }
+  };
+
+  // Helper function to check if certification goal has structured content
+  const hasCompatibleCertification = (goal: string | null): boolean => {
+    if (!goal) return false;
+    return goal.includes('Math EC-6') || goal.includes('Mathematics (902)') || goal.includes('Elementary Mathematics');
+  };
+
+  const handleCertificationGoalUpdated = (newGoal: string) => {
+    setUserCertificationGoal(newGoal);
+    // Refresh the structured learning path after goal update
+    if (user) {
+      fetchUserLearningPath();
+    }
+  };
+
+  const fetchUserLearningPath = async () => {
+    if (!user) return;
+    
+    try {
+      const { getUserPrimaryLearningPath } = await import('../../lib/learningPathBridge');
+      const learningPath = await getUserPrimaryLearningPath(user.id);
+      setStructuredLearningPath(learningPath);
+    } catch (error) {
+      console.error('Error fetching learning path:', error);
     }
   };
 
@@ -163,12 +191,12 @@ export default function DashboardPage() {
           <div className="bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl p-6 border border-blue-200/60 shadow-lg">
             <div className="flex items-center justify-between mb-4">
               <div className="text-3xl">🎯</div>
-              <Link 
-                href="/select-certification"
-                className="text-blue-600 hover:text-blue-800 text-sm"
+              <button 
+                onClick={() => setShowCertificationSelector(true)}
+                className="text-blue-600 hover:text-blue-800 text-sm transition-colors"
               >
                 Change
-              </Link>
+              </button>
             </div>
             <h3 className="text-lg font-semibold text-green-800 mb-2">Certification Goal</h3>
             {userCertificationGoal ? (
@@ -176,12 +204,12 @@ export default function DashboardPage() {
             ) : (
               <div>
                 <p className="text-gray-500 text-sm mb-2">Not set</p>
-                <Link 
-                  href="/select-certification"
-                  className="text-xs text-blue-600 hover:text-blue-800 underline"
+                <button 
+                  onClick={() => setShowCertificationSelector(true)}
+                  className="text-xs text-blue-600 hover:text-blue-800 underline transition-colors"
                 >
                   Choose your certification
-                </Link>
+                </button>
               </div>
             )}
           </div>
@@ -223,7 +251,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Structured Learning Path Invitation */}
-        {structuredLearningPath.hasStructuredPath && (
+        {(structuredLearningPath.hasStructuredPath || hasCompatibleCertification(userCertificationGoal)) && (
           <div className="mb-8">
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-2xl p-6 shadow-lg">
               <div className="flex items-start space-x-4">
@@ -237,7 +265,7 @@ export default function DashboardPage() {
                     ✨ Structured Learning Path Available
                   </h3>
                   <p className="text-blue-800 mb-4">
-                    Your <strong>{structuredLearningPath.certificationName || userCertificationGoal}</strong> certification 
+                    Your <strong>{structuredLearningPath.certificationName || userCertificationGoal || 'Elementary Mathematics (EC-6)'}</strong> certification 
                     now has concept-based learning with organized domains, mastery tracking, and personalized recommendations.
                   </p>
                   <div className="flex space-x-3">
@@ -464,6 +492,14 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Certification Goal Selector Modal */}
+      <CertificationGoalSelector
+        isOpen={showCertificationSelector}
+        onClose={() => setShowCertificationSelector(false)}
+        currentGoal={userCertificationGoal}
+        onGoalUpdated={handleCertificationGoalUpdated}
+      />
     </div>
   );
 }
