@@ -423,6 +423,26 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* Debug Button - Remove after testing */}
+          <div className="mb-4">
+            <button 
+              onClick={async () => {
+                console.log('🔍 MANUAL DEBUG: Current user ID:', user?.id);
+                console.log('🔍 MANUAL DEBUG: Current structuredLearningPath state:', structuredLearningPath);
+                console.log('🔍 MANUAL DEBUG: Current userCertificationGoal:', userCertificationGoal);
+                
+                if (user?.id) {
+                  const { getUserPrimaryLearningPath } = await import('../../lib/learningPathBridge');
+                  const result = await getUserPrimaryLearningPath(user.id);
+                  console.log('🔍 MANUAL DEBUG: Fresh getUserPrimaryLearningPath result:', result);
+                }
+              }}
+              className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+            >
+              🔍 Debug: Check Learning Path
+            </button>
+          </div>
+
           {/* Structured Learning Path Invitation */}
           {structuredLearningPath.hasStructuredPath && (
             <div className="mb-8">

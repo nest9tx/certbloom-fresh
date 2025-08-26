@@ -106,6 +106,8 @@ export async function getUserPrimaryLearningPath(userId: string): Promise<{
   certificationName?: string
 }> {
   try {
+    console.log('🔍 DEBUG: getUserPrimaryLearningPath called with userId:', userId);
+    
     // Get user's current certification goal
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
@@ -114,8 +116,11 @@ export async function getUserPrimaryLearningPath(userId: string): Promise<{
       .single()
 
     if (profileError || !profile) {
+      console.log('🔍 DEBUG: No profile found or error:', profileError);
       return { hasStructuredPath: false }
     }
+
+    console.log('🔍 DEBUG: User profile found:', profile);
 
     // Check for structured study plan
     const { data: studyPlan, error: planError } = await supabase
@@ -135,8 +140,12 @@ export async function getUserPrimaryLearningPath(userId: string): Promise<{
       .single()
 
     if (planError || !studyPlan) {
+      console.log('🔍 DEBUG: No study plan found or error:', planError);
+      console.log('🔍 DEBUG: Query was for is_primary=true, is_active=true');
       return { hasStructuredPath: false }
     }
+
+    console.log('🔍 DEBUG: Study plan found:', studyPlan);
 
     return {
       hasStructuredPath: true,
