@@ -17,7 +17,10 @@ const supabaseAdmin = createClient(
 const CERTIFICATION_MAPPING = {
   'Math EC-6': '902',
   'TExES Core Subjects EC-6: Mathematics (902)': '902',
-  'Elementary Mathematics': '902'
+  'Elementary Mathematics': '902',
+  'TExES Core Subjects EC-6: Mathematics': '902',
+  'EC-6 Mathematics': '902',
+  'Mathematics EC-6': '902'
   // Add more mappings as we build out other certifications
 } as Record<string, string>
 
