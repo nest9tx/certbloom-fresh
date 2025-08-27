@@ -151,6 +151,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     const result = await supabaseSignUp(email, password, fullName)
     if (result.success && result.user) {
+      // 🌸 SACRED FIX: Don't create profile immediately - store for after email confirmation
+      // This fixes the refresh token issue during signup
+      
+      if (certificationGoal && typeof window !== 'undefined') {
+        localStorage.setItem('pendingCertification', certificationGoal);
+        localStorage.setItem('pendingFullName', fullName);
+        console.log('💾 Stored certification for post-confirmation:', certificationGoal);
+      }
+      
+      console.log('✅ Signup successful - profile will be created after email confirmation');
+      return { success: true, user: result.user }
+      
+      /* COMMENTED OUT - Profile creation moved to email confirmation flow
       // Create user profile using API route (server-side with admin privileges)
       try {
         console.log('🏗️ Creating user profile via API for:', email, 'with certification:', certificationGoal)
@@ -201,6 +214,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log('💾 Stored certification as backup due to exception');
         }
       }
+      */
     }
     return result
   }

@@ -41,30 +41,81 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create user profile using admin client
-    const { data, error } = await supabaseAdmin
+    // Check if profile already exists
+    console.log('🔍 SIGNUP DEBUG: Checking if user profile already exists...')
+    const { data: existingProfile, error: checkError } = await supabaseAdmin
       .from('user_profiles')
-      .insert([
-        {
-          id: userId,
+      .select('id, email, certification_goal')
+      .eq('id', userId)
+      .maybeSingle() // Use maybeSingle() instead of single() to avoid errors when no record exists
+
+    console.log('🔍 SIGNUP DEBUG: Existing profile check:', { existingProfile, checkError })
+
+    // Only treat as an error if it's not a "no rows" error
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('❌ API: Error checking existing profile:', checkError)
+      return NextResponse.json(
+        { success: false, error: 'Error checking existing profile: ' + checkError.message },
+        { status: 500 }
+      )
+    }
+
+    let data, error
+
+    if (existingProfile) {
+      console.log('✨ Profile exists - updating with new certification goal')
+      // Update existing profile
+      const updateResult = await supabaseAdmin
+        .from('user_profiles')
+        .update({
           email,
           full_name: fullName || '',
           certification_goal: certificationGoal || null,
-          created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        }
-      ])
-      .select()
+        })
+        .eq('id', userId)
+        .select()
+
+      data = updateResult.data
+      error = updateResult.error
+    } else {
+      console.log('🏗️ No existing profile - creating new one')
+      // Create new profile
+      const insertResult = await supabaseAdmin
+        .from('user_profiles')
+        .insert([
+          {
+            id: userId,
+            email,
+            full_name: fullName || '',
+            certification_goal: certificationGoal || null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }
+        ])
+        .select()
+
+      data = insertResult.data
+      error = insertResult.error
+    }
 
     if (error) {
-      console.error('❌ API: Error creating user profile:', error)
+      console.error('❌ API: Error creating/updating user profile:', error)
       return NextResponse.json(
         { success: false, error: error.message },
         { status: 400 }
       )
     }
 
-    console.log('✅ API: User profile created successfully:', data[0])
+    if (!data || data.length === 0) {
+      console.error('❌ API: No data returned from profile operation')
+      return NextResponse.json(
+        { success: false, error: 'No profile data returned' },
+        { status: 400 }
+      )
+    }
+
+    console.log('✅ API: User profile created/updated successfully:', data[0])
 
     // 🌸 Create structured study plan if available
     console.log('🔍 SIGNUP DEBUG: Starting study plan creation check...');
