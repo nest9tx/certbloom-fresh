@@ -98,11 +98,11 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (certError || !certification) {
-      console.log('🔍 No certification found for test code:', testCode);
+      console.log('🔍 No certification found for test code:', testCode, 'Error:', certError);
       return NextResponse.json({
         success: true,
         hasStructuredContent: false,
-        message: 'Certification goal updated successfully'
+        message: 'Certification goal updated successfully (no structured content yet)'
       });
     }
 
@@ -111,18 +111,11 @@ export async function POST(request: NextRequest) {
       user_id: user.id,
       certification_id: certification.id,
       name: `Primary: ${certificationGoal}`,
-      daily_goal_minutes: 30,
-      is_primary: true,
+      daily_study_minutes: 30,
       is_active: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
-
-    // First, deactivate any existing primary study plans
-    await adminSupabase
-      .from('study_plans')
-      .update({ is_primary: false })
-      .eq('user_id', user.id);
 
     // Create new study plan
     const { data: studyPlan, error: planError } = await adminSupabase
@@ -133,8 +126,11 @@ export async function POST(request: NextRequest) {
 
     if (planError) {
       console.error('❌ Study plan creation error:', planError);
+      // Log more details about the error
+      console.error('❌ Study plan data attempted:', studyPlanData);
+      console.error('❌ Full error details:', JSON.stringify(planError, null, 2));
       return NextResponse.json(
-        { error: `Study plan creation failed: ${planError.message}` },
+        { error: `Study plan creation failed: ${planError.message}. Details: ${planError.details || 'No additional details'}` },
         { status: 500 }
       );
     }

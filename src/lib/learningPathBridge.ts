@@ -78,7 +78,7 @@ export async function setupUserLearningPath(setup: UserCertificationSetup): Prom
       .from('study_plans')
       .update({ 
         name: `Primary: ${setup.certificationGoal}`,
-        is_primary: true // We'll need to add this column
+        is_active: true // Ensure it's active (we'll remove is_primary as it doesn't exist)
       })
       .eq('id', studyPlan.id)
 
@@ -136,12 +136,11 @@ export async function getUserPrimaryLearningPath(userId: string): Promise<{
       `)
       .eq('user_id', userId)
       .eq('is_active', true)
-      .eq('is_primary', true)
       .single()
 
     if (planError || !studyPlan) {
       console.log('🔍 DEBUG: No study plan found or error:', planError);
-      console.log('🔍 DEBUG: Query was for is_primary=true, is_active=true');
+      console.log('🔍 DEBUG: Query was for is_active=true');
       return { hasStructuredPath: false }
     }
 
