@@ -80,9 +80,6 @@ export async function POST(request: NextRequest) {
                 name: `Primary: ${certification.name}`,
                 daily_study_minutes: 30,
                 is_active: true,
-                is_primary: true,
-                guarantee_eligible: true,
-                guarantee_start_date: new Date().toISOString().split('T')[0], // Today's date
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
               })

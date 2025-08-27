@@ -293,57 +293,60 @@ export default function DashboardPage() {
         {/* Concept-Based Learning Options */}
         <div className="grid lg:grid-cols-2 gap-8 mb-12">
           
-          {/* Primary Learning Path */}
-          <div className="lg:col-span-1 bg-gradient-to-br from-green-100 to-blue-50 rounded-2xl p-8 border border-green-200/60 shadow-lg">
-            <div className="flex items-start gap-4 mb-6">
-              <div className="text-4xl">🎯</div>
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-green-800 mb-2">Concept-Based Learning</h3>
-                <p className="text-green-600 text-sm mb-4">
-                  Master concepts step-by-step with personalized learning paths, progress tracking, and adaptive recommendations.
+          {/* Primary Learning Path - Only show if NO structured path is available */}
+          {!(structuredLearningPath.hasStructuredPath || hasCompatibleCertification(userCertificationGoal)) && (
+            <div className="lg:col-span-1 bg-gradient-to-br from-green-100 to-blue-50 rounded-2xl p-8 border border-green-200/60 shadow-lg">
+              <div className="flex items-start gap-4 mb-6">
+                <div className="text-4xl">🎯</div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-green-800 mb-2">Concept-Based Learning</h3>
+                  <p className="text-green-600 text-sm mb-4">
+                    Master concepts step-by-step with personalized learning paths, progress tracking, and adaptive recommendations.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="text-center p-4 bg-blue-50 rounded-xl border border-blue-200">
+                  <div className="text-2xl mb-2">📖</div>
+                  <div className="text-sm font-medium text-blue-700">Learn</div>
+                  <div className="text-xs text-blue-600">Explanations</div>
+                </div>
+                <div className="text-center p-4 bg-purple-50 rounded-xl border border-purple-200">
+                  <div className="text-2xl mb-2">🔧</div>
+                  <div className="text-sm font-medium text-purple-700">Practice</div>
+                  <div className="text-xs text-purple-600">Interactive</div>
+                </div>
+                <div className="text-center p-4 bg-green-50 rounded-xl border border-green-200">
+                  <div className="text-2xl mb-2">✅</div>
+                  <div className="text-sm font-medium text-green-700">Master</div>
+                  <div className="text-xs text-green-600">Track Progress</div>
+                </div>
+              </div>
+
+              <div className="mb-6 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-xs text-blue-700">
+                  <strong>Coming Soon:</strong> Structured learning paths for your certification.
+                  <button 
+                    onClick={() => setShowCertificationSelector(true)}
+                    className="text-green-600 hover:text-green-700 ml-1 underline"
+                  >
+                    Check certification options
+                  </button>
                 </p>
               </div>
+
+              <Link 
+                href="/practice"
+                className="block w-full py-4 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-xl hover:from-green-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] font-medium text-lg text-center"
+              >
+                Start Practice Session ✨
+              </Link>
             </div>
-
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="text-center p-4 bg-blue-50 rounded-xl border border-blue-200">
-                <div className="text-2xl mb-2">📖</div>
-                <div className="text-sm font-medium text-blue-700">Learn</div>
-                <div className="text-xs text-blue-600">Explanations</div>
-              </div>
-              <div className="text-center p-4 bg-purple-50 rounded-xl border border-purple-200">
-                <div className="text-2xl mb-2">🔧</div>
-                <div className="text-sm font-medium text-purple-700">Practice</div>
-                <div className="text-xs text-purple-600">Interactive</div>
-              </div>
-              <div className="text-center p-4 bg-green-50 rounded-xl border border-green-200">
-                <div className="text-2xl mb-2">✅</div>
-                <div className="text-sm font-medium text-green-700">Master</div>
-                <div className="text-xs text-green-600">Track Progress</div>
-              </div>
-            </div>
-
-            {subscriptionStatus === 'free' && (
-              <div className="mb-6 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                <p className="text-xs text-yellow-700">
-                  <strong>Free Tier:</strong> Access to 3 concepts and basic content.
-                  <Link href="/pricing" className="text-blue-600 hover:text-blue-700 ml-1 underline">
-                    Upgrade for full access
-                  </Link>
-                </p>
-              </div>
-            )}
-
-            <Link 
-              href="/study-path"
-              className="block w-full py-4 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-xl hover:from-green-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] font-medium text-lg text-center"
-            >
-              Continue Learning Journey ✨
-            </Link>
-          </div>
+          )}
 
           {/* Quick Actions */}
-          <div className="space-y-6">
+          <div className={`space-y-6 ${!(structuredLearningPath.hasStructuredPath || hasCompatibleCertification(userCertificationGoal)) ? '' : 'lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6'}`}>
             {/* Mindful Learning */}
             <div className="bg-gradient-to-br from-purple-100 to-pink-50 rounded-2xl p-6 border border-purple-200/60 shadow-lg">
               <div className="text-3xl mb-3">🌸</div>
