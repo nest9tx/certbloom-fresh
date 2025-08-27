@@ -168,6 +168,33 @@ export default function DashboardPage() {
             🎉 Upgrade successful! Welcome to CertBloom Pro!
           </div>
         )}
+
+        {/* Gentle Certification Selection Prompt */}
+        {!userCertificationGoal && !isLoadingDashboard && (
+          <div className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6 shadow-lg">
+            <div className="flex items-start space-x-4">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
+                  <span className="text-2xl">🌟</span>
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-semibold text-amber-900 mb-2">
+                  Welcome to your learning journey!
+                </h3>
+                <p className="text-amber-800 mb-4">
+                  To get started with personalized study plans and track your progress, please select your Texas teacher certification program below.
+                </p>
+                <button 
+                  onClick={() => setShowCertificationSelector(true)}
+                  className="inline-flex items-center px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors"
+                >
+                  Choose Your Certification Program →
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Subscription Badge */}
         <div className="flex justify-end mb-4">
@@ -202,13 +229,14 @@ export default function DashboardPage() {
             {userCertificationGoal ? (
               <p className="text-blue-600 text-sm font-medium">{userCertificationGoal}</p>
             ) : (
-              <div>
-                <p className="text-gray-500 text-sm mb-2">Not set</p>
+              <div className="space-y-3">
+                <p className="text-amber-600 text-sm font-medium">🌟 Let&apos;s get started!</p>
+                <p className="text-gray-600 text-xs">Choose your certification program to unlock personalized learning</p>
                 <button 
                   onClick={() => setShowCertificationSelector(true)}
-                  className="text-xs text-blue-600 hover:text-blue-800 underline transition-colors"
+                  className="w-full px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs font-medium rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 transform hover:scale-105 shadow-sm"
                 >
-                  Choose your certification
+                  Select Your Program →
                 </button>
               </div>
             )}

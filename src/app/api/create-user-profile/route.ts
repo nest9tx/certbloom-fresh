@@ -64,15 +64,21 @@ export async function POST(request: NextRequest) {
 
     if (existingProfile) {
       console.log('✨ Profile exists - updating with new certification goal')
+      console.log('🔍 EXISTING PROFILE DEBUG: Current cert goal:', existingProfile.certification_goal)
+      console.log('🔍 EXISTING PROFILE DEBUG: New cert goal:', certificationGoal)
+      
+      // Only update certification_goal if we have a new one to set
+      const updateData = {
+        email,
+        full_name: fullName || '',
+        updated_at: new Date().toISOString(),
+        ...(certificationGoal && { certification_goal: certificationGoal })
+      }
+      
       // Update existing profile
       const updateResult = await supabaseAdmin
         .from('user_profiles')
-        .update({
-          email,
-          full_name: fullName || '',
-          certification_goal: certificationGoal || null,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id', userId)
         .select()
 
