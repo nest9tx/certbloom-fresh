@@ -29,6 +29,17 @@ export async function POST(request: NextRequest) {
     const { userId, email, fullName, certificationGoal } = await request.json()
 
     console.log('🏗️ API: Creating user profile for:', userId, email, 'with cert:', certificationGoal)
+    console.log('🔍 SIGNUP DEBUG: Received userId type:', typeof userId)
+    console.log('🔍 SIGNUP DEBUG: Received userId value:', userId)
+
+    // Verify the user ID format
+    if (!userId || typeof userId !== 'string') {
+      console.error('❌ API: Invalid userId provided:', userId)
+      return NextResponse.json(
+        { success: false, error: 'Invalid user ID provided' },
+        { status: 400 }
+      )
+    }
 
     // Create user profile using admin client
     const { data, error } = await supabaseAdmin
@@ -56,21 +67,32 @@ export async function POST(request: NextRequest) {
     console.log('✅ API: User profile created successfully:', data[0])
 
     // 🌸 Create structured study plan if available
+    console.log('🔍 SIGNUP DEBUG: Starting study plan creation check...');
+    console.log('🔍 SIGNUP DEBUG: certificationGoal received:', certificationGoal);
+    console.log('🔍 SIGNUP DEBUG: typeof certificationGoal:', typeof certificationGoal);
+    console.log('🔍 SIGNUP DEBUG: certificationGoal truthy?', !!certificationGoal);
+    
     if (certificationGoal) {
       try {
+        console.log('🔍 SIGNUP DEBUG: Checking mapping for:', certificationGoal);
         const testCode = CERTIFICATION_MAPPING[certificationGoal]
+        console.log('🔍 SIGNUP DEBUG: Found test code:', testCode);
         
         if (testCode) {
           console.log('🌱 Creating structured study plan for:', certificationGoal, 'with test code:', testCode)
           
           // Find the certification in our concept-based learning system
+          console.log('🔍 SIGNUP DEBUG: Looking for certification with test_code:', testCode);
           const { data: certification, error: certError } = await supabaseAdmin
             .from('certifications')
             .select('id, name')
             .eq('test_code', testCode)
             .single()
 
+          console.log('🔍 SIGNUP DEBUG: Certification query result:', { certification, certError });
+
           if (!certError && certification) {
+            console.log('🔍 SIGNUP DEBUG: Found certification, creating study plan...');
             // Create the study plan
             const { data: studyPlan, error: planError } = await supabaseAdmin
               .from('study_plans')
@@ -86,16 +108,21 @@ export async function POST(request: NextRequest) {
               .select()
               .single()
 
+            console.log('🔍 SIGNUP DEBUG: Study plan creation result:', { studyPlan, planError });
+
             if (!planError && studyPlan) {
               console.log('🎯 Structured study plan created successfully!', studyPlan.name)
             } else {
               console.log('⚠️ Could not create study plan:', planError?.message)
+              console.log('⚠️ Full plan error:', planError)
             }
           } else {
             console.log('📝 No structured content available for:', certificationGoal)
+            console.log('📝 Certification error details:', certError)
           }
         } else {
           console.log('📋 Certification not yet mapped to structured learning:', certificationGoal)
+          console.log('📋 Available mappings:', Object.keys(CERTIFICATION_MAPPING))
         }
       } catch (structuredError) {
         console.error('⚠️ Error creating structured study plan (non-critical):', structuredError)

@@ -146,6 +146,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, fullName: string, certificationGoal?: string) => {
     console.log('🔐 Auth context signup called with certification:', certificationGoal);
+    console.log('🔍 SIGNUP DEBUG: certificationGoal type:', typeof certificationGoal);
+    console.log('🔍 SIGNUP DEBUG: certificationGoal value:', JSON.stringify(certificationGoal));
     
     const result = await supabaseSignUp(email, password, fullName)
     if (result.success && result.user) {
@@ -155,6 +157,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // Make sure we have the most current certification goal
         const finalCertificationGoal = certificationGoal || (typeof window !== 'undefined' ? localStorage.getItem('selectedCertification') : null);
+        
+        console.log('🔍 SIGNUP DEBUG: Final certification goal to send:', finalCertificationGoal);
+        console.log('🔍 SIGNUP DEBUG: localStorage value:', typeof window !== 'undefined' ? localStorage.getItem('selectedCertification') : 'N/A (server)');
         
         const response = await fetch('/api/create-user-profile', {
           method: 'POST',
