@@ -172,21 +172,21 @@ export default function AdminDashboard() {
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-6">
+              <Link href="/admin/content-overview" className="text-center p-4 bg-purple-50 rounded-xl border border-purple-200 hover:bg-purple-100 transition-colors">
+                <div className="text-2xl mb-2">📊</div>
+                <div className="text-sm font-medium text-purple-700">Content Progress</div>
+              </Link>
               <Link href="/admin/questions/new" className="text-center p-4 bg-blue-50 rounded-xl border border-blue-200 hover:bg-blue-100 transition-colors">
                 <div className="text-2xl mb-2">➕</div>
                 <div className="text-sm font-medium text-blue-700">Add Question</div>
               </Link>
               <Link href="/admin/questions" className="text-center p-4 bg-green-50 rounded-xl border border-green-200 hover:bg-green-100 transition-colors">
-                <div className="text-2xl mb-2">📋</div>
+                <div className="text-2xl mb-2">�</div>
                 <div className="text-sm font-medium text-green-700">Manage Questions</div>
               </Link>
-              <Link href="/admin/questions/import" className="text-center p-4 bg-purple-50 rounded-xl border border-purple-200 hover:bg-purple-100 transition-colors">
-                <div className="text-2xl mb-2">📤</div>
-                <div className="text-sm font-medium text-purple-700">Bulk Import</div>
-              </Link>
-              <Link href="/admin/questions/export" className="text-center p-4 bg-orange-50 rounded-xl border border-orange-200 hover:bg-orange-100 transition-colors">
-                <div className="text-2xl mb-2">📥</div>
-                <div className="text-sm font-medium text-orange-700">Export Data</div>
+              <Link href="/admin/questions/import" className="text-center p-4 bg-orange-50 rounded-xl border border-orange-200 hover:bg-orange-100 transition-colors">
+                <div className="text-2xl mb-2">�</div>
+                <div className="text-sm font-medium text-orange-700">Bulk Import</div>
               </Link>
             </div>
 
