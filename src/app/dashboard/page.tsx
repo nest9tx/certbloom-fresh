@@ -148,6 +148,9 @@ export default function DashboardPage() {
             <Link href="/settings" className="text-green-700 hover:text-green-900 transition-colors font-medium">Settings</Link>
             <Link href="/about" className="text-green-700 hover:text-green-900 transition-colors font-medium">About</Link>
             <Link href="/contact" className="text-green-700 hover:text-green-900 transition-colors font-medium">Contact</Link>
+            {(user?.email === 'admin@certbloom.com' || user?.email?.includes('@luminanova.com')) && (
+              <Link href="/admin" className="text-purple-700 hover:text-purple-900 transition-colors font-medium">Admin</Link>
+            )}
             <span className="text-green-600 font-medium text-sm">Welcome, {user.user_metadata?.full_name || user.email?.split('@')[0] || 'Learner'}!</span>
             <button
               onClick={handleSignOut}
