@@ -101,10 +101,10 @@ export default function AnalyticsPage() {
                 Back to Dashboard
               </Link>
               <Link 
-                href="/practice/session?type=quick"
-                className="px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium"
+                href="/study-path"
+                className="px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium"
               >
-                Start Practice Session
+                Continue Learning
               </Link>
             </div>
           </div>

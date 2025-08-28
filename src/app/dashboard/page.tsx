@@ -90,12 +90,6 @@ export default function DashboardPage() {
     }
   };
 
-  // Helper function to check if certification goal has structured content
-  const hasCompatibleCertification = (goal: string | null): boolean => {
-    if (!goal) return false;
-    return goal.includes('Math EC-6') || goal.includes('Mathematics (902)') || goal.includes('Elementary Mathematics');
-  };
-
   const handleCertificationGoalUpdated = (newGoal: string) => {
     setUserCertificationGoal(newGoal);
     // Refresh the structured learning path after goal update
@@ -282,7 +276,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Structured Learning Path Invitation */}
-        {(structuredLearningPath.hasStructuredPath || hasCompatibleCertification(userCertificationGoal)) && (
+        {structuredLearningPath.hasStructuredPath && (
           <div className="mb-8">
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-2xl p-6 shadow-lg">
               <div className="flex items-start space-x-4">
@@ -293,18 +287,18 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-lg font-semibold text-blue-900 mb-2">
-                    ✨ Structured Learning Path Available
+                    ✨ Your Learning Path is Ready
                   </h3>
                   <p className="text-blue-800 mb-4">
-                    Your <strong>{structuredLearningPath.certificationName || userCertificationGoal || 'Elementary Mathematics (EC-6)'}</strong> certification 
-                    now has concept-based learning with organized domains, mastery tracking, and personalized recommendations.
+                    Your <strong>{structuredLearningPath.certificationName || userCertificationGoal || 'certification'}</strong> path 
+                    features concept-based learning with organized domains, mastery tracking, and personalized recommendations.
                   </p>
                   <div className="flex space-x-3">
                     <Link 
                       href="/study-path"
                       className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                     >
-                      Begin Structured Learning →
+                      Begin Learning →
                     </Link>
                     {subscriptionStatus === 'free' && (
                       <Link 
@@ -324,9 +318,9 @@ export default function DashboardPage() {
         {/* Concept-Based Learning Options */}
         <div className="grid lg:grid-cols-2 gap-8 mb-12">
           
-          {/* Primary Learning Path - Only show if NO structured path is available */}
-          {!(structuredLearningPath.hasStructuredPath || hasCompatibleCertification(userCertificationGoal)) && (
-            <div className="lg:col-span-1 bg-gradient-to-br from-green-100 to-blue-50 rounded-2xl p-8 border border-green-200/60 shadow-lg">
+          {/* Always show unified concept-based learning invitation */}
+          {!structuredLearningPath.hasStructuredPath && (
+            <div className="lg:col-span-2 bg-gradient-to-br from-green-100 to-blue-50 rounded-2xl p-8 border border-green-200/60 shadow-lg">
               <div className="flex items-start gap-4 mb-6">
                 <div className="text-4xl">🎯</div>
                 <div className="flex-1">
@@ -355,29 +349,22 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="mb-6 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="text-xs text-blue-700">
-                  <strong>Coming Soon:</strong> Structured learning paths for your certification.
-                  <button 
-                    onClick={() => setShowCertificationSelector(true)}
-                    className="text-green-600 hover:text-green-700 ml-1 underline"
-                  >
-                    Check certification options
-                  </button>
+              <div className="text-center">
+                <p className="text-green-700 text-sm mb-4">
+                  Ready to begin your learning journey? Select your certification program to get started with personalized concept mastery.
                 </p>
+                <button 
+                  onClick={() => setShowCertificationSelector(true)}
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-xl hover:from-green-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium"
+                >
+                  Choose Your Certification Program →
+                </button>
               </div>
-
-              <Link 
-                href="/practice/session"
-                className="block w-full py-4 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-xl hover:from-green-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] font-medium text-lg text-center"
-              >
-                Start Practice Session ✨
-              </Link>
             </div>
           )}
 
           {/* Quick Actions */}
-          <div className={`space-y-6 ${!(structuredLearningPath.hasStructuredPath || hasCompatibleCertification(userCertificationGoal)) ? '' : 'lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6'}`}>
+          <div className={`space-y-6 ${!structuredLearningPath.hasStructuredPath ? '' : 'lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6'}`}>
             {/* Mindful Learning */}
             <div className="bg-gradient-to-br from-purple-100 to-pink-50 rounded-2xl p-6 border border-purple-200/60 shadow-lg">
               <div className="text-3xl mb-3">🌸</div>

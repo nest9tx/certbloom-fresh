@@ -139,7 +139,7 @@ export default function PricingPage() {
               <div className="space-y-4 mb-8">
                 <div className="flex items-center space-x-3">
                   <div className="text-green-500 text-xl">✓</div>
-                  <span className="text-green-700">3 practice sessions per day</span>
+                  <span className="text-green-700">3 study sessions per day</span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <div className="text-green-500 text-xl">✓</div>
@@ -195,7 +195,7 @@ export default function PricingPage() {
               <div className="space-y-4 mb-8">
                 <div className="flex items-center space-x-3">
                   <div className="text-green-500 text-xl">✓</div>
-                  <span className="text-green-700">Unlimited practice sessions</span>
+                  <span className="text-green-700">Unlimited concept learning</span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <div className="text-green-500 text-xl">✓</div>
@@ -237,7 +237,7 @@ export default function PricingPage() {
                     disabled={loadingPlan !== null}
                     className="block w-full px-8 py-3 bg-gradient-to-r from-yellow-400 to-orange-400 text-green-900 rounded-xl hover:from-yellow-500 hover:to-orange-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium disabled:opacity-50"
                   >
-                    {loadingPlan === 'yearly' ? 'Processing...' : '🎯 Subscribe Yearly - $199/year (Save $149!)'}
+                    {loadingPlan === 'yearly' ? 'Processing...' : '🎯 Subscribe Yearly - $99/year (Limited Time Offer) (Save $249!)'}
                   </button>
                 </div>
               ) : (
@@ -302,7 +302,7 @@ export default function PricingPage() {
                 <p className="text-green-600 mb-4">Yes! You can upgrade to Pro from your dashboard once you&apos;ve selected your certification path.</p>
                 
                 <h4 className="text-lg font-semibold text-green-800 mb-2">What&apos;s included in the free plan?</h4>
-                <p className="text-green-600">3 practice sessions daily with 5 questions each, plus all our mindful learning features.</p>
+                <p className="text-green-600">3 study sessions daily with concept-based learning, plus all our mindful learning features.</p>
               </div>
               
               <div>
