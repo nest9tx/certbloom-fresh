@@ -120,18 +120,35 @@ export default function StudyPathDashboard({ certificationId }: StudyPathDashboa
       .flatMap(d => d.concepts)
       .find(c => c.id === conceptId)
     
-    return concept?.user_progress ? 
+    const progress = concept?.user_progress ? 
       (Array.isArray(concept.user_progress) ? concept.user_progress[0] : concept.user_progress) 
       : undefined
+    
+    // Debug logging for progress tracking
+    if (conceptId === '1198924e-1d3a-4a63-b9b9-1af29a372de1') { // Adding and Subtracting Fractions
+      console.log(`🔍 Progress for ${concept?.name}:`, {
+        conceptId,
+        rawUserProgress: concept?.user_progress,
+        processedProgress: progress,
+        isMastered: progress?.is_mastered || false,
+        masteryLevel: progress?.mastery_level || 0
+      });
+    }
+    
+    return progress
   }
 
   const getOverallProgress = () => {
     if (!certification) return { completed: 0, total: 0, percentage: 0 }
 
+    console.log('📊 Calculating overall progress...');
     const allConcepts = certification.domains.flatMap(d => d.concepts)
+    console.log(`📊 Found ${allConcepts.length} total concepts`);
+    
     const completed = allConcepts.filter(c => {
       const progress = getConceptProgress(c.id)
       const isMastered = progress?.is_mastered || false
+      console.log(`📊 ${c.name}: mastered=${isMastered}, progress=`, progress);
       if (isMastered) {
         console.log(`✅ ${c.name} is mastered:`, progress);
       }
@@ -163,10 +180,18 @@ export default function StudyPathDashboard({ certificationId }: StudyPathDashboa
     return null
   }
 
-  const handleConceptComplete = () => {
+  const handleConceptComplete = async () => {
     console.log('🎯 Concept completed, reloading data...');
     setSelectedConcept(null)
-    loadData() // Reload to update progress
+    
+    // Force a fresh data reload 
+    try {
+      console.log('📊 Reloading certification data with fresh progress...');
+      await loadData()
+      console.log('✅ Data reloaded successfully');
+    } catch (error) {
+      console.error('❌ Error reloading data:', error);
+    }
   }
 
   if (loading) {

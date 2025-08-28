@@ -111,11 +111,15 @@ export default function ContentRenderer({ contentItem, onComplete }: ContentRend
                     }
                   }}
                   className={`w-full text-left p-3 rounded-lg border-2 transition-colors font-medium ${
-                    selectedAnswer === index
-                      ? selectedAnswer === content.correct
-                        ? 'bg-green-100 border-green-500 text-green-900 font-bold'
-                        : 'bg-red-100 border-red-500 text-red-900 font-bold'
-                      : 'bg-white border-gray-500 text-black font-semibold hover:border-purple-500 hover:bg-purple-50 hover:text-purple-900'
+                    showExplanation
+                      ? (index === content.correct
+                          ? 'bg-green-100 border-green-500 text-green-900 font-bold'
+                          : (selectedAnswer === index 
+                              ? 'bg-red-100 border-red-500 text-red-900 font-bold'
+                              : 'bg-gray-100 border-gray-400 text-gray-600'))
+                      : (selectedAnswer === index
+                          ? 'bg-blue-100 border-blue-500 text-blue-900 font-bold'
+                          : 'bg-white border-gray-500 text-black font-semibold hover:border-purple-500 hover:bg-purple-50 hover:text-purple-900')
                   }`}
                   disabled={showExplanation}
                 >

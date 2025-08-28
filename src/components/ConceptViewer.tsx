@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { ConceptWithContent, updateConceptProgress, getDifficultyLabel } from '../lib/conceptLearning'
+import { ConceptWithContent, updateConceptProgress, getDifficultyLabel, recordContentEngagement } from '../lib/conceptLearning'
 import { useAuth } from '../../lib/auth-context'
 import ContentRenderer from './ContentRenderer'
 
@@ -32,18 +32,45 @@ export default function ConceptViewer({ concept, onComplete, onBack }: ConceptVi
   const currentContent = sortedContent[currentContentIndex];
   const progress = concept.user_progress ? (Array.isArray(concept.user_progress) ? concept.user_progress[0] : concept.user_progress) : undefined;
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleContentComplete = (_timeSpent: number) => {
-    // Mark current content as completed
-    const newCompleted = new Set(completedContent)
-    newCompleted.add(currentContent.id)
-    setCompletedContent(newCompleted)
+  const handleContentComplete = async (timeSpent: number) => {
+    if (!user) return;
 
-    // Move to next content item or complete concept
-    if (currentContentIndex < sortedContent.length - 1) {
-      setCurrentContentIndex(currentContentIndex + 1)
-    } else {
-      handleConceptComplete()
+    try {
+      // Record content engagement in database for resume feature
+      console.log('💾 Saving content completion...', {
+        contentId: currentContent.id,
+        timeSpent
+      });
+
+      await recordContentEngagement(user.id, currentContent.id, timeSpent);
+      
+      // Mark current content as completed locally
+      const newCompleted = new Set(completedContent)
+      newCompleted.add(currentContent.id)
+      setCompletedContent(newCompleted)
+
+      console.log('✅ Content saved and marked complete');
+
+      // Move to next content item or complete concept
+      if (currentContentIndex < sortedContent.length - 1) {
+        console.log('➡️ Moving to next content item...');
+        setCurrentContentIndex(currentContentIndex + 1)
+      } else {
+        console.log('🎯 All content completed, finishing concept...');
+        handleConceptComplete()
+      }
+    } catch (error) {
+      console.error('❌ Error saving content progress:', error);
+      // Still allow progression even if save fails
+      const newCompleted = new Set(completedContent)
+      newCompleted.add(currentContent.id)
+      setCompletedContent(newCompleted)
+
+      if (currentContentIndex < sortedContent.length - 1) {
+        setCurrentContentIndex(currentContentIndex + 1)
+      } else {
+        handleConceptComplete()
+      }
     }
   }
 
@@ -51,16 +78,43 @@ export default function ConceptViewer({ concept, onComplete, onBack }: ConceptVi
     if (!user) return
 
     const totalTimeSpent = Math.floor((Date.now() - startTime) / 1000 / 60) // Convert to minutes
-    const masteryIncrease = 0.2 // Each completion increases mastery by 20%
-    const newMasteryLevel = Math.min((progress?.mastery_level || 0) + masteryIncrease, 1.0)
+    
+    // SMART MASTERY CALCULATION
+    // Base mastery increase depends on content amount and performance
+    const contentCount = sortedContent.length
+    const currentMastery = progress?.mastery_level || 0
     const timesReviewed = (progress?.times_reviewed || 0) + 1
+    
+    let masteryIncrease: number
+    
+    if (contentCount >= 4) {
+      // Rich content (4+ items): Can master in 1-2 sessions with good performance
+      masteryIncrease = timesReviewed === 1 ? 0.7 : 0.3 // 70% first time, then 30%
+    } else if (contentCount >= 2) {
+      // Medium content (2-3 items): Can master in 2-3 sessions  
+      masteryIncrease = timesReviewed === 1 ? 0.5 : 0.3 // 50% first time, then 30%
+    } else {
+      // Light content (1 item): Requires multiple reviews to ensure retention
+      masteryIncrease = 0.3 // 30% per session (3-4 sessions needed)
+    }
+    
+    // Apply minimum learning curve: first session gets at least 40%
+    if (timesReviewed === 1 && masteryIncrease < 0.4) {
+      masteryIncrease = 0.4
+    }
+    
+    const newMasteryLevel = Math.min(currentMastery + masteryIncrease, 1.0)
+    const isNowMastered = newMasteryLevel >= 0.8 // 80% threshold for mastery
 
-    console.log('🔥 Completing concept:', {
+    console.log('🧠 Smart mastery calculation:', {
       conceptId: concept.id,
       conceptName: concept.name,
-      previousMastery: progress?.mastery_level || 0,
-      newMasteryLevel,
+      contentCount,
       timesReviewed,
+      previousMastery: currentMastery,
+      masteryIncrease,
+      newMasteryLevel,
+      isNowMastered,
       totalTimeSpent
     });
 
@@ -70,13 +124,18 @@ export default function ConceptViewer({ concept, onComplete, onBack }: ConceptVi
         time_spent_minutes: (progress?.time_spent_minutes || 0) + totalTimeSpent,
         last_studied_at: new Date().toISOString(),
         times_reviewed: timesReviewed,
-        is_mastered: newMasteryLevel >= 0.8 // Consider mastered at 80%
+        is_mastered: isNowMastered // Use calculated mastery status
       })
 
       console.log('✅ Progress updated successfully:', updatedProgress);
+      
+      // Let the parent component handle navigation 
+      console.log('🎉 Concept completed! Calling onComplete...');
       onComplete?.()
     } catch (error) {
       console.error('❌ Error updating concept progress:', error)
+      // Show user-friendly error
+      alert('Progress not saved. Please try again or refresh the page.')
     }
   }
 

@@ -196,7 +196,8 @@ export async function getCertificationWithFullStructure(certificationId: string,
             if (domain.concepts) {
               domain.concepts.forEach((concept: SupabaseConceptResponse) => {
                 const progressForConcept = progressMap.get(concept.id);
-                ;(concept as SupabaseConceptResponse & { concept_progress?: unknown[] }).concept_progress = progressForConcept ? [progressForConcept] : []
+                // Fix: Use user_progress to match TypeScript interface
+                ;(concept as SupabaseConceptResponse & { user_progress?: unknown }).user_progress = progressForConcept || undefined
                 if (progressForConcept) {
                   console.log(`📈 Progress for ${concept.name}:`, progressForConcept);
                 }
