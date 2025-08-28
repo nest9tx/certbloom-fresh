@@ -1,5 +1,9 @@
 // Quick debug script to check user data
+import { config } from 'dotenv'
 import { createClient } from '@supabase/supabase-js'
+
+// Load environment variables
+config({ path: '.env.local' })
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,

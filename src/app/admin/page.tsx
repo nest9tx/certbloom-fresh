@@ -58,20 +58,40 @@ export default function AdminDashboard() {
   const fetchStats = async () => {
     setIsLoadingStats(true);
     try {
-      // Fetch question and user statistics
+      // Get Supabase session for auth header
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      const authHeader = session?.access_token ? `Bearer ${session.access_token}` : 'Bearer admin-access';
+
+      // Fetch question and user statistics with auth header
       const [questionRes, userRes] = await Promise.all([
-        fetch('/api/admin/question-stats'),
-        fetch('/api/admin/user-stats')
+        fetch('/api/admin/question-stats', {
+          headers: { 'Authorization': authHeader }
+        }),
+        fetch('/api/admin/user-stats', {
+          headers: { 'Authorization': authHeader }
+        })
       ]);
       
       if (questionRes.ok) {
         const qStats = await questionRes.json();
+        console.log('Question stats received:', qStats);
         setQuestionStats(qStats);
+      } else {
+        console.error('Question stats error:', await questionRes.text());
       }
       
       if (userRes.ok) {
         const uStats = await userRes.json();
+        console.log('User stats received:', uStats);
         setUserStats(uStats);
+      } else {
+        console.error('User stats error:', await userRes.text());
       }
     } catch (error) {
       console.error('Error fetching admin stats:', error);

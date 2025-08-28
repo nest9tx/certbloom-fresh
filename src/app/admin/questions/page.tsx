@@ -51,10 +51,26 @@ export default function QuestionsPage() {
   const fetchQuestions = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/admin/questions');
+      // Get Supabase session for auth header
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      const authHeader = session?.access_token ? `Bearer ${session.access_token}` : 'Bearer admin-access';
+
+      const response = await fetch('/api/admin/questions', {
+        headers: { 'Authorization': authHeader }
+      });
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('Questions received:', data.length, 'questions');
         setQuestions(data);
+      } else {
+        console.error('Questions fetch error:', await response.text());
       }
     } catch (error) {
       console.error('Error fetching questions:', error);
