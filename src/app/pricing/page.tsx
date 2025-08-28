@@ -189,7 +189,7 @@ export default function PricingPage() {
                 <p className="text-green-600 mb-6">Complete certification preparation</p>
                 <div className="text-5xl font-bold text-green-700 mb-2">$29</div>
                 <p className="text-green-500">per month</p>
-                <p className="text-sm text-green-600 mt-2">or $199/year (save $149!)</p>
+                <p className="text-sm text-green-600 mt-2">or $99/year (save $249!)</p>
               </div>
 
               <div className="space-y-4 mb-8">
@@ -237,7 +237,7 @@ export default function PricingPage() {
                     disabled={loadingPlan !== null}
                     className="block w-full px-8 py-3 bg-gradient-to-r from-yellow-400 to-orange-400 text-green-900 rounded-xl hover:from-yellow-500 hover:to-orange-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium disabled:opacity-50"
                   >
-                    {loadingPlan === 'yearly' ? 'Processing...' : '🎯 Subscribe Yearly - $99/year (Limited Time Offer) (Save $249!)'}
+                    {loadingPlan === 'yearly' ? 'Processing...' : '🎯 Subscribe Yearly - $99/year (Save $249!)'}
                   </button>
                 </div>
               ) : (
@@ -309,8 +309,16 @@ export default function PricingPage() {
                 <h4 className="text-lg font-semibold text-green-800 mb-2">How does the money fund educational pods?</h4>
                 <p className="text-green-600 mb-4">75% of Pro subscriptions go directly to funding educational initiatives in the four corners region and Peru.</p>
                 
-                <h4 className="text-lg font-semibold text-green-800 mb-2">Is there a money-back guarantee?</h4>
-                <p className="text-green-600">Yes! We offer a 30-day money-back guarantee if you&apos;re not completely satisfied.</p>
+                <h4 className="text-lg font-semibold text-green-800 mb-2">What&apos;s your refund policy?</h4>
+                <p className="text-green-600 mb-2">We offer a 30-day money-back guarantee if you&apos;re not completely satisfied, with some guidelines:</p>
+                <ul className="text-green-600 text-sm space-y-1 mb-4 pl-4">
+                  <li>• Guarantee applies to users who haven&apos;t completed more than 75% of any certification program</li>
+                  <li>• Annual subscribers can access all certification programs during their subscription</li>
+                  <li>• After 30 days, no refunds are available, but you keep access until your billing period ends</li>
+                </ul>
+                
+                <h4 className="text-lg font-semibold text-green-800 mb-2">What happens if I cancel?</h4>
+                <p className="text-green-600">Your subscription continues until the end of your current billing cycle. No partial refunds are issued for early cancellation, but you retain full access until the subscription expires.</p>
               </div>
             </div>
           </div>
