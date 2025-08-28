@@ -44,8 +44,17 @@ export default function ConceptViewer({ concept, onComplete, onBack }: ConceptVi
     const newMasteryLevel = Math.min((progress?.mastery_level || 0) + masteryIncrease, 1.0)
     const timesReviewed = (progress?.times_reviewed || 0) + 1
 
+    console.log('🔥 Completing concept:', {
+      conceptId: concept.id,
+      conceptName: concept.name,
+      previousMastery: progress?.mastery_level || 0,
+      newMasteryLevel,
+      timesReviewed,
+      totalTimeSpent
+    });
+
     try {
-      await updateConceptProgress(user.id, concept.id, {
+      const updatedProgress = await updateConceptProgress(user.id, concept.id, {
         mastery_level: newMasteryLevel,
         time_spent_minutes: (progress?.time_spent_minutes || 0) + totalTimeSpent,
         last_studied_at: new Date().toISOString(),
@@ -53,9 +62,10 @@ export default function ConceptViewer({ concept, onComplete, onBack }: ConceptVi
         is_mastered: newMasteryLevel >= 0.8 // Consider mastered at 80%
       })
 
+      console.log('✅ Progress updated successfully:', updatedProgress);
       onComplete?.()
     } catch (error) {
-      console.error('Error updating concept progress:', error)
+      console.error('❌ Error updating concept progress:', error)
     }
   }
 

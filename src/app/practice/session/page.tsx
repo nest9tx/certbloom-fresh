@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../../../lib/auth-context';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '../../../../lib/auth-context';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getRandomizedAdaptiveQuestions, recordQuestionAttempt } from '@/lib/randomizedQuestions';
@@ -44,6 +44,17 @@ export default function PracticeSessionPage() {
   const [sessionType, setSessionType] = useState<'quick' | 'full' | 'custom'>('full');
   const [sessionLength, setSessionLength] = useState<number>(10);
 
+  // Clear session state on mount to prevent cached questions
+  useEffect(() => {
+    console.log('🆕 Starting fresh session, clearing state');
+    setCurrentQuestion(0);
+    setSelectedAnswer(null);
+    setShowExplanation(false);
+    setAnswers([]);
+    setSessionComplete(false);
+    setConfidence(null);
+  }, []);
+
   // Parse URL parameters on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -62,6 +73,13 @@ export default function PracticeSessionPage() {
       }
     }
   }, []);
+
+  // Reset answer state when question changes to prevent auto-selection
+  useEffect(() => {
+    setSelectedAnswer(null);
+    setShowExplanation(false);
+    setConfidence(null);
+  }, [currentQuestion]);
 
   // Fetch subscription status and certification goal
   useEffect(() => {
@@ -133,15 +151,21 @@ export default function PracticeSessionPage() {
             );
             
             if (result.success && result.questions) {
+              // Deduplicate questions by ID to prevent duplicates
+              const uniqueQuestions = result.questions.filter((question, index, self) => 
+                index === self.findIndex(q => q.id === question.id)
+              );
+              
               // For free users, double-check and slice to 5 questions max
               const finalQuestions = subscriptionStatus === 'free' 
-                ? result.questions.slice(0, 5) 
-                : result.questions;
+                ? uniqueQuestions.slice(0, 5) 
+                : uniqueQuestions;
               
               setAvailableQuestions(finalQuestions);
               console.log('✅ Questions loaded:', {
                 requested: effectiveLength,
                 received: result.questions.length,
+                unique: uniqueQuestions.length,
                 final: finalQuestions.length,
                 subscription: subscriptionStatus
               });
@@ -168,8 +192,22 @@ export default function PracticeSessionPage() {
     }
   }, [user, loading, router]);
 
+  // Reset state when question changes to prevent auto-selection
+  useEffect(() => {
+    console.log('🔄 Question changed, resetting state');
+    setSelectedAnswer(null);
+    setShowExplanation(false);
+    setConfidence(null);
+  }, [currentQuestion]);
+
   const handleAnswerSelect = (answerIndex: number) => {
+    // Prevent selection when explanation is already showing
     if (showExplanation) return;
+    
+    // Prevent double-selection or race conditions
+    if (selectedAnswer !== null) return;
+    
+    console.log('🎯 Answer selected:', answerIndex);
     setSelectedAnswer(answerIndex);
   };
 
@@ -608,14 +646,20 @@ export default function PracticeSessionPage() {
             {/* Next Steps */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
-                href="/dashboard"
+                href={userCertificationGoal ? `/study-path/${encodeURIComponent(userCertificationGoal)}` : '/dashboard'}
                 className="px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
-                Return to Dashboard
+                Continue Learning Path
+              </Link>
+              <Link
+                href="/dashboard"
+                className="px-8 py-3 border-2 border-green-600 text-green-600 rounded-xl hover:bg-green-50 transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                View Dashboard
               </Link>
               <button
                 onClick={() => window.location.reload()}
-                className="px-8 py-3 border-2 border-green-600 text-green-600 rounded-xl hover:bg-green-50 transition-all duration-200 shadow-lg hover:shadow-xl"
+                className="px-6 py-3 border border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 transition-all duration-200"
               >
                 Another Session
               </button>
@@ -740,17 +784,17 @@ export default function PracticeSessionPage() {
                 
                 if (showExplanation) {
                   if (choice.is_correct) {
-                    buttonClass += "border-green-500 bg-green-50 text-green-800";
+                    buttonClass += "border-green-500 bg-green-100 text-green-900 font-medium";
                   } else if (index === selectedAnswer && !choice.is_correct) {
-                    buttonClass += "border-red-500 bg-red-50 text-red-800";
+                    buttonClass += "border-red-500 bg-red-100 text-red-900 font-medium";
                   } else {
-                    buttonClass += "border-gray-300 bg-gray-50 text-gray-600";
+                    buttonClass += "border-gray-300 bg-gray-100 text-gray-700";
                   }
                 } else {
                   if (index === selectedAnswer) {
-                    buttonClass += "border-green-500 bg-green-50 text-green-800 transform scale-[1.02]";
+                    buttonClass += "border-green-600 bg-green-100 text-green-900 font-bold transform scale-[1.01] shadow-md";
                   } else {
-                    buttonClass += "border-green-200/60 hover:border-green-400 hover:bg-green-50 text-gray-800 hover:text-green-800";
+                    buttonClass += "border-gray-400 hover:border-green-500 hover:bg-green-50 text-black font-medium hover:text-green-900 bg-white shadow-sm hover:shadow-md";
                   }
                 }
 
@@ -761,8 +805,10 @@ export default function PracticeSessionPage() {
                     disabled={showExplanation}
                     className={buttonClass}
                   >
-                    <span className="font-medium mr-3">{String.fromCharCode(65 + index)}.</span>
-                    {choice.choice_text}
+                    <div className="flex items-center">
+                      <span className="font-bold mr-3 text-lg">{String.fromCharCode(65 + index)}.</span>
+                      <span className="text-base leading-relaxed">{choice.choice_text}</span>
+                    </div>
                   </button>
                 );
               })}

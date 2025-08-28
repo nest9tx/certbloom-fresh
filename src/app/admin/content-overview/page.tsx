@@ -110,6 +110,23 @@ export default function ContentOverviewPage() {
           <p className="text-green-600">Track progress toward your complete question bank vision</p>
         </div>
 
+        {/* Current Status Notice */}
+        <div className="mb-8 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6">
+          <div className="flex items-start space-x-4">
+            <div className="text-3xl">🚧</div>
+            <div>
+              <h3 className="text-lg font-semibold text-amber-900 mb-2">Content Tracking System</h3>
+              <p className="text-amber-800 mb-3">
+                This page is designed to track progress as you build out your complete question bank across certifications and domains.
+                Currently showing basic metrics from existing questions.
+              </p>
+              <div className="text-amber-700 text-sm">
+                <strong>Future functionality:</strong> Set targets per certification/domain, track upload progress, identify content gaps
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Overall Progress */}
         <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8 border border-blue-200/60 shadow-lg mb-8">
           <h2 className="text-2xl font-semibold text-blue-800 mb-6 text-center">🎯 Overall Progress</h2>

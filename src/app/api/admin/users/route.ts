@@ -12,7 +12,7 @@ export async function GET() {
     // Get all user profiles
     const { data: users, error } = await supabase
       .from('user_profiles')
-      .select('id, email, subscription_status, created_at')
+      .select('id, email, subscription_status, created_at, certification_goal, stripe_customer_id')
       .order('created_at', { ascending: false });
 
     if (error) {

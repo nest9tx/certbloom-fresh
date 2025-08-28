@@ -140,7 +140,7 @@ export default function TermsOfServicePage() {
 
               <h3 className="text-xl font-medium text-green-700 mb-3">Limitations</h3>
               <ul className="list-disc list-inside text-gray-700 space-y-2">
-                <li>Guarantee applies only once per user, per certification exam</li>
+                <li>Guarantee applies only once per user, and is non-transferable to another person or change in certification program</li>
                 <li>You must request guarantee benefits within 14 days of receiving exam results</li>
                 <li>Guarantee is void if account sharing or other Terms violations are detected</li>
                 <li>We reserve the right to verify completion and exam results</li>

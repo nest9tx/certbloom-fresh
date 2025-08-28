@@ -188,13 +188,18 @@ export async function getCertificationWithFullStructure(certificationId: string,
           console.error('Error fetching user progress:', progressError)
           // Don't throw - just continue without progress data
         } else {
+          console.log('📊 Loaded progress data:', { userId, conceptIds: conceptIds.length, progressCount: progressData?.length || 0 });
           // Attach progress data to concepts
           const progressMap = new Map(progressData?.map(p => [p.concept_id, p]) || [])
           
           ;(rawCertData.domains || []).forEach((domain: SupabaseDomainResponse) => {
             if (domain.concepts) {
               domain.concepts.forEach((concept: SupabaseConceptResponse) => {
-                ;(concept as SupabaseConceptResponse & { concept_progress?: unknown[] }).concept_progress = progressMap.get(concept.id) ? [progressMap.get(concept.id)] : []
+                const progressForConcept = progressMap.get(concept.id);
+                ;(concept as SupabaseConceptResponse & { concept_progress?: unknown[] }).concept_progress = progressForConcept ? [progressForConcept] : []
+                if (progressForConcept) {
+                  console.log(`📈 Progress for ${concept.name}:`, progressForConcept);
+                }
               })
             }
           })
@@ -318,19 +323,28 @@ export async function updateConceptProgress(
   conceptId: string,
   updates: Partial<ConceptProgress>
 ): Promise<ConceptProgress> {
-  const { data, error } = await supabase
-    .from('concept_progress')
-    .upsert({
-      user_id: userId,
-      concept_id: conceptId,
-      ...updates,
-      updated_at: new Date().toISOString()
-    })
-    .select()
-    .single()
+  try {
+    // Use the database function to handle constraints safely
+    const { data, error } = await supabase.rpc('handle_concept_progress_update', {
+      target_user_id: userId,
+      target_concept_id: conceptId,
+      new_mastery_level: updates.mastery_level,
+      new_time_spent: updates.time_spent_minutes,
+      new_times_reviewed: updates.times_reviewed,
+      set_mastered: updates.is_mastered
+    });
 
-  if (error) throw error
-  return data
+    if (error) {
+      console.error('❌ Error updating concept progress:', error);
+      throw error;
+    }
+
+    console.log('✅ Concept progress updated via database function:', data);
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to update concept progress:', error);
+    throw error;
+  }
 }
 
 export async function recordContentEngagement(
@@ -339,17 +353,26 @@ export async function recordContentEngagement(
   timeSpentSeconds: number,
   engagementScore: number = 0.5
 ): Promise<void> {
-  const { error } = await supabase
-    .from('content_engagement')
-    .upsert({
-      user_id: userId,
-      content_item_id: contentItemId,
-      time_spent_seconds: timeSpentSeconds,
-      engagement_score: engagementScore,
-      completed_at: new Date().toISOString()
-    })
+  try {
+    // Use the database function to handle constraints safely
+    const { data, error } = await supabase.rpc('handle_content_engagement_update', {
+      target_user_id: userId,
+      target_content_item_id: contentItemId,
+      time_spent: timeSpentSeconds,
+      engagement_score: engagementScore
+    });
 
-  if (error) throw error
+    if (error) {
+      console.warn('⚠️ Content engagement tracking failed:', error.message);
+      // Don't throw - this is non-critical tracking
+      return;
+    }
+
+    console.log('✅ Content engagement recorded:', data);
+  } catch (error) {
+    console.warn('⚠️ Content engagement tracking error:', error);
+    // Silently fail to avoid breaking the learning flow
+  }
 }
 
 // ============================================

@@ -131,14 +131,21 @@ export default function StudyPathDashboard({ certificationId }: StudyPathDashboa
     const allConcepts = certification.domains.flatMap(d => d.concepts)
     const completed = allConcepts.filter(c => {
       const progress = getConceptProgress(c.id)
-      return progress?.is_mastered || false
+      const isMastered = progress?.is_mastered || false
+      if (isMastered) {
+        console.log(`✅ ${c.name} is mastered:`, progress);
+      }
+      return isMastered
     }).length
 
-    return {
+    const result = {
       completed,
       total: allConcepts.length,
       percentage: allConcepts.length > 0 ? Math.round((completed / allConcepts.length) * 100) : 0
     }
+
+    console.log('📊 Overall progress calculated:', result);
+    return result
   }
 
   const getNextRecommendedConcept = () => {
@@ -157,6 +164,7 @@ export default function StudyPathDashboard({ certificationId }: StudyPathDashboa
   }
 
   const handleConceptComplete = () => {
+    console.log('🎯 Concept completed, reloading data...');
     setSelectedConcept(null)
     loadData() // Reload to update progress
   }
