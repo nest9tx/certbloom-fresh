@@ -17,9 +17,20 @@ export default function ConceptViewer({ concept, onComplete, onBack }: ConceptVi
   const [completedContent, setCompletedContent] = useState<Set<string>>(new Set())
   const [startTime] = useState(Date.now())
 
-  const sortedContent = [...concept.content_items].sort((a, b) => a.order_index - b.order_index)
-  const currentContent = sortedContent[currentContentIndex]
-  const progress = concept.user_progress ? (Array.isArray(concept.user_progress) ? concept.user_progress[0] : concept.user_progress) : undefined
+  // Deduplicate and sort content items to prevent duplicate questions
+  const deduplicatedContent = concept.content_items.filter((item, index, self) => 
+    index === self.findIndex(i => i.title === item.title && i.type === item.type)
+  );
+  const sortedContent = [...deduplicatedContent].sort((a, b) => a.order_index - b.order_index);
+  
+  console.log('📋 Content items:', {
+    total: concept.content_items.length,
+    afterDeduplication: deduplicatedContent.length,
+    titles: deduplicatedContent.map(item => item.title)
+  });
+  
+  const currentContent = sortedContent[currentContentIndex];
+  const progress = concept.user_progress ? (Array.isArray(concept.user_progress) ? concept.user_progress[0] : concept.user_progress) : undefined;
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleContentComplete = (_timeSpent: number) => {

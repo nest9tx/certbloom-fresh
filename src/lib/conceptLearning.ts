@@ -350,16 +350,14 @@ export async function updateConceptProgress(
 export async function recordContentEngagement(
   userId: string,
   contentItemId: string,
-  timeSpentSeconds: number,
-  engagementScore: number = 0.5
+  timeSpentSeconds: number
 ): Promise<void> {
   try {
-    // Use the database function to handle constraints safely
+    // Use the updated database function to handle constraints safely
     const { data, error } = await supabase.rpc('handle_content_engagement_update', {
       target_user_id: userId,
       target_content_item_id: contentItemId,
-      time_spent: timeSpentSeconds,
-      engagement_score: engagementScore
+      time_spent: timeSpentSeconds
     });
 
     if (error) {

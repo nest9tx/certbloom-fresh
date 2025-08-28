@@ -15,6 +15,13 @@ export default function ContentRenderer({ contentItem, onComplete }: ContentRend
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null)
   const [showExplanation, setShowExplanation] = useState(false)
 
+  // Reset state when content item changes to prevent persistence issues
+  useEffect(() => {
+    console.log('🔄 Content changed, resetting state');
+    setSelectedAnswer(null);
+    setShowExplanation(false);
+  }, [contentItem.id]);
+
   // Track engagement when component unmounts or content changes
   useEffect(() => {
     return () => {
@@ -97,25 +104,41 @@ export default function ContentRenderer({ contentItem, onComplete }: ContentRend
                 <button
                   key={index}
                   onClick={() => {
-                    setSelectedAnswer(index)
-                    setShowExplanation(true)
+                    // Prevent auto-selection - only select if not already selected
+                    if (selectedAnswer === null) {
+                      setSelectedAnswer(index)
+                      // Don't auto-show explanation - let user submit first
+                    }
                   }}
-                  className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                  className={`w-full text-left p-3 rounded-lg border-2 transition-colors font-medium ${
                     selectedAnswer === index
                       ? selectedAnswer === content.correct
-                        ? 'bg-green-100 border-green-400 text-green-800'
-                        : 'bg-red-100 border-red-400 text-red-800'
-                      : 'bg-white border-gray-300 hover:border-purple-400'
+                        ? 'bg-green-100 border-green-500 text-green-900 font-bold'
+                        : 'bg-red-100 border-red-500 text-red-900 font-bold'
+                      : 'bg-white border-gray-500 text-black font-semibold hover:border-purple-500 hover:bg-purple-50 hover:text-purple-900'
                   }`}
-                  disabled={selectedAnswer !== null}
+                  disabled={showExplanation}
                 >
-                  <span className="font-medium">{String.fromCharCode(65 + index)})</span> {answer}
+                  <span className="font-bold mr-2">{String.fromCharCode(65 + index)})</span> {answer}
                 </button>
               ))}
             </div>
           )}
         </div>
       )}
+      
+      {/* Submit button when answer is selected but explanation not shown */}
+      {selectedAnswer !== null && !showExplanation && (
+        <div className="mt-4">
+          <button
+            onClick={() => setShowExplanation(true)}
+            className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors font-medium"
+          >
+            Submit Answer
+          </button>
+        </div>
+      )}
+      
       {showExplanation && content.explanation && (
         <div className="bg-white p-4 rounded-lg border border-purple-200 mb-4">
           <h4 className="font-medium text-purple-800 mb-2">Explanation:</h4>
