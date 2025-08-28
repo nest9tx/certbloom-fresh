@@ -14,10 +14,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get question statistics
+    // Get question statistics with certification names
     const { data: questions, error: questionsError } = await supabase
       .from('questions')
-      .select('certification_id, domain, difficulty_level')
+      .select(`
+        certification_id, 
+        difficulty_level,
+        certifications!inner(name)
+      `)
       .order('created_at', { ascending: false });
 
     if (questionsError) {
@@ -34,14 +38,16 @@ export async function GET(request: NextRequest) {
     };
 
     questions?.forEach(question => {
-      // Count by domain
-      if (question.domain) {
-        stats.byDomain[question.domain] = (stats.byDomain[question.domain] || 0) + 1;
+      // Count by certification name instead of domain
+      if (question.certifications && question.certifications[0]?.name) {
+        const certName = question.certifications[0].name;
+        stats.byDomain[certName] = (stats.byDomain[certName] || 0) + 1;
       }
 
-      // Count by certification
-      if (question.certification_id) {
-        stats.byCertification[question.certification_id] = (stats.byCertification[question.certification_id] || 0) + 1;
+      // Count by certification name for the byCertification stats too
+      if (question.certifications && question.certifications[0]?.name) {
+        const certName = question.certifications[0].name;
+        stats.byCertification[certName] = (stats.byCertification[certName] || 0) + 1;
       }
 
       // Count by difficulty

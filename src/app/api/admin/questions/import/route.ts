@@ -9,17 +9,17 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 interface QuestionRow {
   question_text: string;
   certification_id: string;
-  domain: string;
-  concept: string;
-  difficulty_level: 'foundation' | 'application' | 'advanced';
+  difficulty_level: 'foundation' | 'application' | 'advanced' | 'easy' | 'medium' | 'hard';
   question_type: 'multiple_choice' | 'true_false' | 'short_answer';
   option_a?: string;
   option_b?: string;
   option_c?: string;
   option_d?: string;
   option_e?: string;
-  correct_answer: string;
-  explanation: string;
+  correct_answer?: string;
+  explanation?: string;
+  rationale?: string;
+  teaching_notes?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -51,10 +51,9 @@ export async function POST(request: NextRequest) {
     const errors: string[] = [];
     let skippedCount = 0;
 
-    // Validate headers
+    // Validate headers (updated for current schema)
     const requiredHeaders = [
-      'question_text', 'certification_id', 'domain', 'concept', 
-      'difficulty_level', 'question_type', 'correct_answer', 'explanation'
+      'question_text', 'certification_id', 'difficulty_level', 'question_type'
     ];
     
     for (const required of requiredHeaders) {
@@ -88,9 +87,9 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // Validate field values
-        if (!['foundation', 'application', 'advanced'].includes(row.difficulty_level)) {
-          errors.push(`Line ${lineNumber}: Invalid difficulty_level. Must be: foundation, application, or advanced`);
+        // Validate field values (updated for current schema)
+        if (!['foundation', 'application', 'advanced', 'easy', 'medium', 'hard'].includes(row.difficulty_level)) {
+          errors.push(`Line ${lineNumber}: Invalid difficulty_level. Must be: foundation, application, advanced, easy, medium, or hard`);
           continue;
         }
 

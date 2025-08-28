@@ -14,10 +14,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Fetch all questions with ordering
+    // Fetch all questions with certification names
     const { data: questions, error } = await supabase
       .from('questions')
-      .select('*')
+      .select(`
+        *,
+        certifications!inner(name, test_code)
+      `)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -43,8 +46,8 @@ export async function POST(request: NextRequest) {
 
     const questionData = await request.json();
 
-    // Validate required fields
-    const requiredFields = ['question_text', 'certification_id', 'domain', 'concept', 'difficulty_level', 'question_type', 'correct_answer', 'explanation'];
+    // Validate required fields (updated for current schema)
+    const requiredFields = ['question_text', 'certification_id', 'difficulty_level', 'question_type'];
     
     for (const field of requiredFields) {
       if (!questionData[field]) {
