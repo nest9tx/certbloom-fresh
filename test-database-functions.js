@@ -1,5 +1,5 @@
 // Test if our database functions exist and work properly
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -16,7 +16,7 @@ async function testProgressFunctions() {
     console.log('🧪 Testing database functions...');
     
     // Test if handle_concept_progress_update function exists
-    const { data: funcTest, error: funcError } = await supabase
+    const { error: funcError } = await supabase
       .rpc('handle_concept_progress_update', {
         target_user_id: '00000000-0000-0000-0000-000000000000', // Dummy UUID
         target_concept_id: '00000000-0000-0000-0000-000000000000',

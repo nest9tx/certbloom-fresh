@@ -1,5 +1,5 @@
-const { createClient } = require('@supabase/supabase-js');
-const fs = require('fs');
+import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
 
 // Read the SQL fix
 const sqlContent = fs.readFileSync('./fix-session-completion.sql', 'utf8');
