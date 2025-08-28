@@ -1,17 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
 export async function GET() {
   try {
-    // Temporarily allow all requests for debugging
-    console.log('Question stats API called');
+    // Use service role key to bypass RLS
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
-    // Get question statistics with certification names and domain data
+    // Get questions with certification info - use left join to include all questions
     const { data: questions, error: questionsError } = await supabase
       .from('questions')
       .select(`
@@ -19,7 +17,7 @@ export async function GET() {
         difficulty_level,
         domain,
         concept,
-        certifications!inner(name)
+        certifications(name)
       `)
       .order('created_at', { ascending: false });
 
@@ -28,7 +26,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Failed to fetch questions' }, { status: 500 });
     }
 
-    console.log('Found questions:', questions?.length || 0);
+    console.log('API: Found questions:', questions?.length || 0);
+    console.log('API: Sample question:', questions?.[0]);
 
     // Process statistics
     const stats = {
@@ -45,8 +44,9 @@ export async function GET() {
       }
 
       // Count by certification name
-      if (question.certifications && question.certifications[0]?.name) {
-        const certName = question.certifications[0].name;
+      const certification = question.certifications as unknown as { name: string } | null;
+      if (certification?.name) {
+        const certName = certification.name;
         stats.byCertification[certName] = (stats.byCertification[certName] || 0) + 1;
       }
 

@@ -368,7 +368,7 @@ export default function DashboardPage() {
               </div>
 
               <Link 
-                href="/practice"
+                href="/practice/session"
                 className="block w-full py-4 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-xl hover:from-green-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] font-medium text-lg text-center"
               >
                 Start Practice Session ✨
