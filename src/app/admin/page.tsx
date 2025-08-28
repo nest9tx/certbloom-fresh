@@ -188,10 +188,6 @@ export default function AdminDashboard() {
                 <div className="text-2xl mb-2">📤</div>
                 <div className="text-sm font-medium text-orange-700">Bulk Import</div>
               </Link>
-              <Link href="/admin/diagnostics" className="text-center p-4 bg-yellow-50 rounded-xl border border-yellow-200 hover:bg-yellow-100 transition-colors">
-                <div className="text-2xl mb-2">🔍</div>
-                <div className="text-sm font-medium text-yellow-700">Diagnostics</div>
-              </Link>
             </div>
 
             <Link 
