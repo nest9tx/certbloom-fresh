@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import Navigation from '../../components/Navigation';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -42,26 +43,7 @@ export default function ContactPage() {
         <div className="absolute top-1/3 right-10 animate-pulse text-green-300 opacity-20 text-4xl" style={{animationDelay: '0.5s'}}>🌱</div>
       </div>
 
-      {/* Navigation */}
-      <nav className="relative z-10 bg-white/80 backdrop-blur-md border-b border-green-200/50">
-        <div className="max-w-7xl mx-auto flex items-center justify-between p-6">
-          <Link href="/" className="flex items-center space-x-3 group">
-            <div className="w-10 h-10 transition-transform group-hover:scale-105">
-              <Image src="/certbloom-logo.svg" alt="CertBloom" width={40} height={40} className="w-full h-full object-contain" />
-            </div>
-            <div className="text-2xl font-light text-green-800 tracking-wide">CertBloom</div>
-          </Link>
-          <div className="hidden md:flex items-center space-x-8">
-            <Link href="/" className="text-green-700 hover:text-green-900 transition-colors font-medium">Home</Link>
-            <Link href="/pricing" className="text-green-700 hover:text-green-900 transition-colors font-medium">Pricing</Link>
-            <Link href="/about" className="text-green-700 hover:text-green-900 transition-colors font-medium">About</Link>
-            <Link href="/contact" className="text-green-900 font-semibold">Contact</Link>
-            <Link href="/auth" className="px-6 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
-              Sign In
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <Navigation currentPage="contact" />
 
       {/* Main Content */}
       <div className="relative z-10 container mx-auto px-6 py-12">
