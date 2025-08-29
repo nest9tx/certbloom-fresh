@@ -23,6 +23,12 @@ export default function DashboardPage() {
   }>({ hasStructuredPath: false });
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(true);
   const [showCertificationSelector, setShowCertificationSelector] = useState(false);
+  const [progressData, setProgressData] = useState<{
+    conceptsCompleted: number;
+    totalConcepts: number;
+    overallProgress: number;
+    domainProgress: Array<{ name: string; completed: number; total: number; stage: string }>;
+  } | null>(null);
 
   // Check for success parameter from URL (client-side only)
   useEffect(() => {
@@ -59,7 +65,76 @@ export default function DashboardPage() {
         setUserCertificationGoal(certificationGoal);
         setStructuredLearningPath(learningPath);
         
+        // Fetch progress data if user has structured path
+        await fetchProgressData(learningPath);
+        
         setIsLoadingDashboard(false);
+      }
+    }
+
+    async function fetchProgressData(learningPath: typeof structuredLearningPath) {
+      if (!user || !learningPath.hasStructuredPath || !learningPath.certificationId) {
+        console.log('📊 No structured path found, skipping progress fetch');
+        return;
+      }
+
+      try {
+        console.log('📊 Fetching progress data for certification:', learningPath.certificationId);
+        const { getCertificationWithFullStructure } = await import('../../lib/conceptLearning');
+        const certData = await getCertificationWithFullStructure(learningPath.certificationId, user.id);
+        
+        if (certData && certData.domains) {
+          // Calculate progress same as StudyPathDashboard
+          const allConcepts = certData.domains.flatMap(d => d.concepts);
+          const completedConcepts = allConcepts.filter(concept => {
+            const progress = concept.user_progress ? 
+              (Array.isArray(concept.user_progress) ? concept.user_progress[0] : concept.user_progress) 
+              : undefined;
+            return progress?.is_mastered || false;
+          });
+
+          const overallProgress = allConcepts.length > 0 ? 
+            Math.round((completedConcepts.length / allConcepts.length) * 100) : 0;
+
+          // Calculate domain-wise progress for mastery journey
+          const domainProgress = certData.domains.map(domain => {
+            const domainConcepts = domain.concepts || [];
+            const domainCompleted = domainConcepts.filter(concept => {
+              const progress = concept.user_progress ? 
+                (Array.isArray(concept.user_progress) ? concept.user_progress[0] : concept.user_progress) 
+                : undefined;
+              return progress?.is_mastered || false;
+            });
+
+            // Determine stage based on domain name/index
+            let stage = 'foundations';
+            if (domain.name?.toLowerCase().includes('application') || domain.order_index > 1) stage = 'applications';
+            if (domain.name?.toLowerCase().includes('advanced') || domain.order_index > 2) stage = 'advanced';
+            
+            return {
+              name: domain.name || `Domain ${domain.order_index}`,
+              completed: domainCompleted.length,
+              total: domainConcepts.length,
+              stage
+            };
+          });
+
+          setProgressData({
+            conceptsCompleted: completedConcepts.length,
+            totalConcepts: allConcepts.length,
+            overallProgress,
+            domainProgress
+          });
+
+          console.log('📊 Progress data calculated:', {
+            conceptsCompleted: completedConcepts.length,
+            totalConcepts: allConcepts.length,
+            overallProgress,
+            domainProgress
+          });
+        }
+      } catch (error) {
+        console.error('❌ Error fetching progress data:', error);
       }
     }
 
@@ -67,6 +142,72 @@ export default function DashboardPage() {
       fetchUserData();
     }
   }, [user]);
+
+  const fetchProgressData = async (learningPath: typeof structuredLearningPath) => {
+    if (!user || !learningPath.hasStructuredPath || !learningPath.certificationId) {
+      console.log('📊 No structured path found, skipping progress fetch');
+      return;
+    }
+
+    try {
+      console.log('📊 Fetching progress data for certification:', learningPath.certificationId);
+      const { getCertificationWithFullStructure } = await import('../../lib/conceptLearning');
+      const certData = await getCertificationWithFullStructure(learningPath.certificationId, user.id);
+      
+      if (certData && certData.domains) {
+        // Calculate progress same as StudyPathDashboard
+        const allConcepts = certData.domains.flatMap(d => d.concepts);
+        const completedConcepts = allConcepts.filter(concept => {
+          const progress = concept.user_progress ? 
+            (Array.isArray(concept.user_progress) ? concept.user_progress[0] : concept.user_progress) 
+            : undefined;
+          return progress?.is_mastered || false;
+        });
+
+        const overallProgress = allConcepts.length > 0 ? 
+          Math.round((completedConcepts.length / allConcepts.length) * 100) : 0;
+
+        // Calculate domain-wise progress for mastery journey
+        const domainProgress = certData.domains.map(domain => {
+          const domainConcepts = domain.concepts || [];
+          const domainCompleted = domainConcepts.filter(concept => {
+            const progress = concept.user_progress ? 
+              (Array.isArray(concept.user_progress) ? concept.user_progress[0] : concept.user_progress) 
+              : undefined;
+            return progress?.is_mastered || false;
+          });
+
+          // Determine stage based on domain name/index
+          let stage = 'foundations';
+          if (domain.name?.toLowerCase().includes('application') || domain.order_index > 1) stage = 'applications';
+          if (domain.name?.toLowerCase().includes('advanced') || domain.order_index > 2) stage = 'advanced';
+          
+          return {
+            name: domain.name || `Domain ${domain.order_index}`,
+            completed: domainCompleted.length,
+            total: domainConcepts.length,
+            stage
+          };
+        });
+
+        setProgressData({
+          conceptsCompleted: completedConcepts.length,
+          totalConcepts: allConcepts.length,
+          overallProgress,
+          domainProgress
+        });
+
+        console.log('📊 Progress data calculated:', {
+          conceptsCompleted: completedConcepts.length,
+          totalConcepts: allConcepts.length,
+          overallProgress,
+          domainProgress
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error fetching progress data:', error);
+    }
+  }
 
   useEffect(() => {
     if (!loading && !user) {
@@ -105,6 +246,9 @@ export default function DashboardPage() {
       const { getUserPrimaryLearningPath } = await import('../../lib/learningPathBridge');
       const learningPath = await getUserPrimaryLearningPath(user.id);
       setStructuredLearningPath(learningPath);
+      
+      // Also refresh progress data
+      await fetchProgressData(learningPath);
     } catch (error) {
       console.error('Error fetching learning path:', error);
     }
@@ -245,9 +389,9 @@ export default function DashboardPage() {
               <div className="text-3xl">🌱</div>
               <div className="text-right">
                 <div className="text-2xl font-bold text-green-700">
-                  {isLoadingDashboard ? '...' : '0'}
+                  {isLoadingDashboard ? '...' : progressData?.conceptsCompleted ?? 0}
                 </div>
-                <div className="text-sm text-green-600">of 9 concepts</div>
+                <div className="text-sm text-green-600">of {progressData?.totalConcepts ?? 9} concepts</div>
               </div>
             </div>
             <h3 className="text-lg font-semibold text-green-800 mb-2">Concepts Mastered</h3>
@@ -260,7 +404,7 @@ export default function DashboardPage() {
               <div className="text-3xl">📈</div>
               <div className="text-right">
                 <div className="text-2xl font-bold text-purple-700">
-                  {isLoadingDashboard ? '...' : '0%'}
+                  {isLoadingDashboard ? '...' : `${progressData?.overallProgress ?? 0}%`}
                 </div>
                 <div className="text-sm text-purple-600">Overall Progress</div>
               </div>
@@ -269,7 +413,7 @@ export default function DashboardPage() {
             <div className="w-full bg-purple-200 rounded-full h-2">
               <div 
                 className="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full transition-all duration-500"
-                style={{ width: `0%` }}
+                style={{ width: `${progressData?.overallProgress ?? 0}%` }}
               ></div>
             </div>
           </div>
@@ -404,49 +548,104 @@ export default function DashboardPage() {
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 border border-green-200/60 shadow-xl mb-12">
           <h3 className="text-2xl font-semibold text-green-800 mb-6 text-center">Your Concept Mastery Journey</h3>
           
-          <div className="flex items-center justify-between max-w-4xl mx-auto">
-            <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center text-white text-2xl mb-3 shadow-lg">
-                📖
+          {progressData && progressData.domainProgress.length > 0 ? (
+            // Show real progress data
+            <div className="flex items-center justify-between max-w-4xl mx-auto">
+              {progressData.domainProgress.slice(0, 4).map((domain, index) => {
+                const progressPercent = domain.total > 0 ? (domain.completed / domain.total) * 100 : 0;
+                const isActive = domain.completed > 0;
+                const isCompleted = progressPercent >= 80;
+                
+                // Determine colors and icon based on stage
+                let bgColor = 'bg-gray-300';
+                let textColor = 'text-gray-600';
+                const ringColor = 'text-gray-500';
+                let icon = '📖';
+                
+                if (index === 0) { // Foundations
+                  bgColor = isCompleted ? 'bg-green-500' : isActive ? 'bg-green-400' : 'bg-green-300';
+                  textColor = isCompleted ? 'text-green-700' : 'text-green-600';
+                  icon = '📖';
+                } else if (index === 1) { // Applications
+                  bgColor = isCompleted ? 'bg-blue-500' : isActive ? 'bg-blue-400' : 'bg-blue-300';
+                  textColor = isCompleted ? 'text-blue-700' : 'text-blue-600';
+                  icon = '🔧';
+                } else if (index === 2) { // Advanced
+                  bgColor = isCompleted ? 'bg-purple-500' : isActive ? 'bg-purple-400' : 'bg-purple-300';
+                  textColor = isCompleted ? 'text-purple-700' : 'text-purple-600';
+                  icon = '🎯';
+                } else { // Mastery
+                  bgColor = isCompleted ? 'bg-yellow-500' : isActive ? 'bg-yellow-400' : 'bg-yellow-300';
+                  textColor = isCompleted ? 'text-yellow-700' : 'text-yellow-600';
+                  icon = '🏆';
+                }
+
+                return (
+                  <div key={`${domain.name}-${index}`} className="flex flex-col items-center text-center">
+                    <div className={`w-16 h-16 ${bgColor} rounded-full flex items-center justify-center text-white text-2xl mb-3 shadow-lg transition-all duration-300 ${isActive ? 'scale-110' : ''}`}>
+                      {icon}
+                    </div>
+                    <div className={`text-sm font-medium ${textColor}`}>
+                      {index === 0 ? 'Foundations' : index === 1 ? 'Applications' : index === 2 ? 'Advanced' : 'Mastery'}
+                    </div>
+                    <div className={`text-xs ${ringColor}`}>
+                      {domain.completed} of {domain.total} concepts
+                    </div>
+                    {progressPercent > 0 && (
+                      <div className="text-xs font-semibold text-green-600 mt-1">
+                        {Math.round(progressPercent)}%
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            // Fallback to static data if no progress available
+            <div className="flex items-center justify-between max-w-4xl mx-auto">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center text-white text-2xl mb-3 shadow-lg">
+                  📖
+                </div>
+                <div className="text-sm font-medium text-green-700">Foundations</div>
+                <div className="text-xs text-green-600">3 concepts</div>
               </div>
-              <div className="text-sm font-medium text-green-700">Foundations</div>
-              <div className="text-xs text-green-600">3 concepts</div>
-            </div>
-            
-            <div className="flex-1 h-2 bg-green-200 mx-4 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-green-500 to-blue-400 w-1/4 rounded-full"></div>
-            </div>
-            
-            <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-blue-400 rounded-full flex items-center justify-center text-white text-2xl mb-3 shadow-lg">
-                🔧
+              
+              <div className="flex-1 h-2 bg-green-200 mx-4 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-green-500 to-blue-400 w-1/4 rounded-full"></div>
               </div>
-              <div className="text-sm font-medium text-blue-700">Applications</div>
-              <div className="text-xs text-blue-600">3 concepts</div>
-            </div>
-            
-            <div className="flex-1 h-2 bg-gray-200 mx-4 rounded-full">
-              <div className="h-full bg-gray-300 w-0 rounded-full"></div>
-            </div>
-            
-            <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 text-2xl mb-3">
-                🎯
+              
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-blue-400 rounded-full flex items-center justify-center text-white text-2xl mb-3 shadow-lg">
+                  🔧
+                </div>
+                <div className="text-sm font-medium text-blue-700">Applications</div>
+                <div className="text-xs text-blue-600">3 concepts</div>
               </div>
-              <div className="text-sm font-medium text-gray-600">Advanced</div>
-              <div className="text-xs text-gray-500">3 concepts</div>
-            </div>
-            
-            <div className="flex-1 h-2 bg-gray-200 mx-4 rounded-full"></div>
-            
-            <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 text-2xl mb-3">
-                🏆
+              
+              <div className="flex-1 h-2 bg-gray-200 mx-4 rounded-full">
+                <div className="h-full bg-gray-300 w-0 rounded-full"></div>
               </div>
-              <div className="text-sm font-medium text-gray-600">Mastery</div>
-              <div className="text-xs text-gray-500">Certification Ready</div>
+              
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 text-2xl mb-3">
+                  🎯
+                </div>
+                <div className="text-sm font-medium text-gray-600">Advanced</div>
+                <div className="text-xs text-gray-500">3 concepts</div>
+              </div>
+              
+              <div className="flex-1 h-2 bg-gray-200 mx-4 rounded-full"></div>
+              
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 text-2xl mb-3">
+                  🏆
+                </div>
+                <div className="text-sm font-medium text-gray-600">Mastery</div>
+                <div className="text-xs text-gray-500">Certification Ready</div>
+              </div>
             </div>
-          </div>
+          )}
 
           {subscriptionStatus === 'free' && (
             <div className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200 text-center">
