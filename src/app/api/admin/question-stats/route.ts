@@ -1,6 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
+// Force dynamic rendering to prevent caching of database queries
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     // Use service role key to bypass RLS
@@ -9,7 +12,7 @@ export async function GET() {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // Get questions with certification info - use left join to include all questions
+    // Get questions with certification and topic info
     const { data: questions, error: questionsError } = await supabase
       .from('questions')
       .select(`
@@ -17,7 +20,8 @@ export async function GET() {
         difficulty_level,
         domain,
         concept,
-        certifications(name)
+        certifications(name),
+        topics(name)
       `)
       .order('created_at', { ascending: false });
 
@@ -38,8 +42,13 @@ export async function GET() {
     };
 
     questions?.forEach(question => {
-      // Count by domain
-      if (question.domain) {
+      // Count by topic name (use topic instead of old domain field)
+      const topic = question.topics as unknown as { name: string } | null;
+      if (topic?.name) {
+        const topicName = topic.name;
+        stats.byDomain[topicName] = (stats.byDomain[topicName] || 0) + 1;
+      } else if (question.domain) {
+        // Fallback to domain field for questions without topics
         stats.byDomain[question.domain] = (stats.byDomain[question.domain] || 0) + 1;
       }
 

@@ -1,6 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
+// Force dynamic rendering to prevent caching of database queries
+export const dynamic = 'force-dynamic';
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
@@ -11,12 +14,13 @@ export async function GET() {
     // Temporarily allow all requests for debugging
     console.log('Questions API called');
 
-    // Fetch all questions with certification names
+    // Fetch all questions with certification and topic names
     const { data: questions, error } = await supabase
       .from('questions')
       .select(`
         *,
-        certifications!inner(name, test_code)
+        certifications!inner(name, test_code),
+        topics(name)
       `)
       .order('created_at', { ascending: false });
 
@@ -25,8 +29,15 @@ export async function GET() {
       return NextResponse.json({ error: 'Failed to fetch questions' }, { status: 500 });
     }
 
-    console.log('Found questions for admin:', questions?.length || 0);
-    return NextResponse.json(questions || []);
+    // Transform the data to include topic name as domain
+    const transformedQuestions = questions?.map(question => ({
+      ...question,
+      domain: question.topics?.name || question.domain || 'Uncategorized',
+      concept: question.topics?.name || question.concept || 'General'
+    })) || [];
+
+    console.log('Found questions for admin:', transformedQuestions.length);
+    return NextResponse.json(transformedQuestions);
 
   } catch (error) {
     console.error('Error in questions API:', error);
