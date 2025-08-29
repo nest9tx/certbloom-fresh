@@ -1,6 +1,6 @@
 'use client';
 
-import Navigation from '../../components/Navigation';
+import StaticNavigation from '../../components/StaticNavigation';
 
 export default function FeaturesPage() {
   return (
@@ -13,7 +13,7 @@ export default function FeaturesPage() {
         <div className="absolute top-1/3 right-10 animate-pulse text-green-300 opacity-20 text-4xl" style={{animationDelay: '0.5s'}}>🌱</div>
       </div>
 
-      <Navigation currentPage="features" />
+      <StaticNavigation currentPage="features" />
 
       {/* Main Content */}
       <div className="relative z-10 container mx-auto px-6 py-12">

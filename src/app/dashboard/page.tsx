@@ -2,7 +2,7 @@
 
 import { useAuth } from '../../../lib/auth-context';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import CertificationGoalSelector from '../../components/CertificationGoalSelector';
@@ -44,106 +44,8 @@ export default function DashboardPage() {
     }
   }, [router]);
 
-  // Fetch user data
-  useEffect(() => {
-    async function fetchUserData() {
-      if (user) {
-        setIsLoadingDashboard(true);
-        
-        const { getSubscriptionStatus } = await import('../../lib/getSubscriptionStatus');
-        const { getUserCertificationGoal } = await import('../../lib/getUserCertificationGoal');
-        const { getUserPrimaryLearningPath } = await import('../../lib/learningPathBridge');
-        
-        const [status, certificationGoal, learningPath] = await Promise.all([
-          getSubscriptionStatus(user.id),
-          getUserCertificationGoal(user.id),
-          getUserPrimaryLearningPath(user.id)
-        ]);
-        
-        console.log('📋 Fetched user data:', { status, certificationGoal, learningPath });
-        setSubscriptionStatus(status);
-        setUserCertificationGoal(certificationGoal);
-        setStructuredLearningPath(learningPath);
-        
-        // Fetch progress data if user has structured path
-        await fetchProgressData(learningPath);
-        
-        setIsLoadingDashboard(false);
-      }
-    }
-
-    async function fetchProgressData(learningPath: typeof structuredLearningPath) {
-      if (!user || !learningPath.hasStructuredPath || !learningPath.certificationId) {
-        console.log('📊 No structured path found, skipping progress fetch');
-        return;
-      }
-
-      try {
-        console.log('📊 Fetching progress data for certification:', learningPath.certificationId);
-        const { getCertificationWithFullStructure } = await import('../../lib/conceptLearning');
-        const certData = await getCertificationWithFullStructure(learningPath.certificationId, user.id);
-        
-        if (certData && certData.domains) {
-          // Calculate progress same as StudyPathDashboard
-          const allConcepts = certData.domains.flatMap(d => d.concepts);
-          const completedConcepts = allConcepts.filter(concept => {
-            const progress = concept.user_progress ? 
-              (Array.isArray(concept.user_progress) ? concept.user_progress[0] : concept.user_progress) 
-              : undefined;
-            return progress?.is_mastered || false;
-          });
-
-          const overallProgress = allConcepts.length > 0 ? 
-            Math.round((completedConcepts.length / allConcepts.length) * 100) : 0;
-
-          // Calculate domain-wise progress for mastery journey
-          const domainProgress = certData.domains.map(domain => {
-            const domainConcepts = domain.concepts || [];
-            const domainCompleted = domainConcepts.filter(concept => {
-              const progress = concept.user_progress ? 
-                (Array.isArray(concept.user_progress) ? concept.user_progress[0] : concept.user_progress) 
-                : undefined;
-              return progress?.is_mastered || false;
-            });
-
-            // Determine stage based on domain name/index
-            let stage = 'foundations';
-            if (domain.name?.toLowerCase().includes('application') || domain.order_index > 1) stage = 'applications';
-            if (domain.name?.toLowerCase().includes('advanced') || domain.order_index > 2) stage = 'advanced';
-            
-            return {
-              name: domain.name || `Domain ${domain.order_index}`,
-              completed: domainCompleted.length,
-              total: domainConcepts.length,
-              stage
-            };
-          });
-
-          setProgressData({
-            conceptsCompleted: completedConcepts.length,
-            totalConcepts: allConcepts.length,
-            overallProgress,
-            domainProgress
-          });
-
-          console.log('📊 Progress data calculated:', {
-            conceptsCompleted: completedConcepts.length,
-            totalConcepts: allConcepts.length,
-            overallProgress,
-            domainProgress
-          });
-        }
-      } catch (error) {
-        console.error('❌ Error fetching progress data:', error);
-      }
-    }
-
-    if (user) {
-      fetchUserData();
-    }
-  }, [user]);
-
-  const fetchProgressData = async (learningPath: typeof structuredLearningPath) => {
+  // Define fetchProgressData with useCallback to prevent infinite re-renders
+  const fetchProgressData = useCallback(async (learningPath: typeof structuredLearningPath) => {
     if (!user || !learningPath.hasStructuredPath || !learningPath.certificationId) {
       console.log('📊 No structured path found, skipping progress fetch');
       return;
@@ -207,14 +109,40 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('❌ Error fetching progress data:', error);
     }
-  }
+  }, [user]);
 
+  // Fetch user data
   useEffect(() => {
-    if (!loading && !user) {
-      console.log('🔐 No user found, redirecting to auth');
-      router.push('/auth');
+    async function fetchUserData() {
+      if (user) {
+        setIsLoadingDashboard(true);
+        
+        const { getSubscriptionStatus } = await import('../../lib/getSubscriptionStatus');
+        const { getUserCertificationGoal } = await import('../../lib/getUserCertificationGoal');
+        const { getUserPrimaryLearningPath } = await import('../../lib/learningPathBridge');
+        
+        const [status, certificationGoal, learningPath] = await Promise.all([
+          getSubscriptionStatus(user.id),
+          getUserCertificationGoal(user.id),
+          getUserPrimaryLearningPath(user.id)
+        ]);
+        
+        console.log('📋 Fetched user data:', { status, certificationGoal, learningPath });
+        setSubscriptionStatus(status);
+        setUserCertificationGoal(certificationGoal);
+        setStructuredLearningPath(learningPath);
+        
+        // Fetch progress data if user has structured path
+        await fetchProgressData(learningPath);
+        
+        setIsLoadingDashboard(false);
+      }
     }
-  }, [user, loading, router]);
+
+    if (user) {
+      fetchUserData();
+    }
+  }, [user, fetchProgressData]);
 
   const handleSignOut = async () => {
     setIsSigningOut(true);

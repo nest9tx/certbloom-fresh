@@ -14,6 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NODE_ENV === 'production' ? 'https://certbloom.com' : 'http://localhost:3000'),
   title: "CertBloom - Texas Teacher Certification Prep with Purpose",
   description: "Adaptive TExES preparation designed specifically for Texas educators. Combining intelligent learning with mindful practice. Join 5,000+ teachers who passed with CertBloom.",
   keywords: "TExES prep, Texas teacher certification, EC-6, ELA 4-8, teacher test prep, adaptive learning, mindful education",

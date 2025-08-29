@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import Navigation from '../../components/Navigation';
+import StaticNavigation from '../../components/StaticNavigation';
 
 export default function AboutPage() {
   return (
@@ -15,7 +15,7 @@ export default function AboutPage() {
         <div className="absolute top-1/3 right-10 animate-pulse text-green-300 opacity-20 text-4xl" style={{animationDelay: '0.5s'}}>🌱</div>
       </div>
 
-      <Navigation currentPage="about" />
+      <StaticNavigation currentPage="about" />
 
       {/* Main Content */}
       <div className="relative z-10 container mx-auto px-6 py-12">

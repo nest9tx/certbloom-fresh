@@ -2,11 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import Navigation from '../../components/Navigation';
-import { useAuth } from '../../lib/auth-context';
+import StaticNavigation from '../../components/StaticNavigation';
 
 export default function SupportPage() {
-  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('help');
   const [ticketForm, setTicketForm] = useState({
     subject: '',
@@ -26,7 +24,7 @@ export default function SupportPage() {
       const subject = encodeURIComponent(`[${ticketForm.category.toUpperCase()}] ${ticketForm.subject}`);
       const body = encodeURIComponent(
         `Priority: ${ticketForm.priority}\n` +
-        `User: ${user?.email || 'Guest'}\n\n` +
+        `User: Guest\n\n` +
         `Message:\n${ticketForm.message}`
       );
       
@@ -78,7 +76,7 @@ export default function SupportPage() {
         <div className="absolute top-1/3 right-10 animate-pulse text-green-300 opacity-20 text-4xl" style={{animationDelay: '0.5s'}}>🌱</div>
       </div>
 
-      <Navigation currentPage="support" />
+      <StaticNavigation currentPage="support" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-12">
         {/* Header */}
