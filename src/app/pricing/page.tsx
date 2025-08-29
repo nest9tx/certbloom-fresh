@@ -1,15 +1,21 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../lib/auth-context';
+import StaticNavigation from '../../components/StaticNavigation';
 
 export default function PricingPage() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const [loadingPlan, setLoadingPlan] = useState<'monthly' | 'yearly' | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  // Ensure this only runs on the client side
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleCheckout = async (plan: 'monthly' | 'yearly') => {
     if (!user) {
@@ -66,42 +72,7 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50">
-      {/* Navigation */}
-      <nav className="relative z-10 bg-white/80 backdrop-blur-md border-b border-green-200/50">
-        <div className="max-w-7xl mx-auto flex items-center justify-between p-6">
-          <Link href="/" className="flex items-center space-x-3 group">
-            <div className="w-10 h-10 transition-transform group-hover:scale-105">
-              <Image src="/certbloom-logo.svg" alt="CertBloom" width={40} height={40} className="w-full h-full object-contain" />
-            </div>
-            <div className="text-2xl font-light text-green-800 tracking-wide">CertBloom</div>
-          </Link>
-          <div className="hidden md:flex items-center space-x-8">
-            <Link href="/" className="text-green-700 hover:text-green-900 transition-colors font-medium">Home</Link>
-            <Link href="/about" className="text-green-700 hover:text-green-900 transition-colors font-medium">About</Link>
-            <Link href="/contact" className="text-green-700 hover:text-green-900 transition-colors font-medium">Contact</Link>
-            {user ? (
-              <>
-                <Link href="/dashboard" className="text-green-700 hover:text-green-900 transition-colors font-medium">Dashboard</Link>
-                <button
-                  onClick={() => signOut()}
-                  className="px-6 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-                >
-                  Sign Out
-                </button>
-              </>
-            ) : (
-              <>
-                <Link href="/auth" className="text-green-700 hover:text-green-900 transition-colors font-medium">
-                  Sign In
-                </Link>
-                <Link href="/select-certification" className="px-6 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
-                  Get Started
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </nav>
+      <StaticNavigation currentPage="pricing" />
 
       {/* Main Content */}
       <div className="container mx-auto px-6 py-12">
@@ -116,11 +87,9 @@ export default function PricingPage() {
             <p className="text-xl text-green-600 mb-4">
               Supporting Texas teachers while funding educational pods in the four corners region
             </p>
-            {!user && (
-              <p className="text-lg text-green-500">
-                To get started, first select your TExES certification path, then choose your plan inside your dashboard
-              </p>
-            )}
+            <p className="text-lg text-green-500">
+              To get started, first select your TExES certification path, then choose your plan inside your dashboard
+            </p>
           </div>
 
           {/* Pricing Cards */}
@@ -159,22 +128,20 @@ export default function PricingPage() {
                 </div>
               </div>
 
-              {user ? (
-                <div className="text-center">
+              <div className="text-center">
+                {isClient && user ? (
                   <div className="px-8 py-3 bg-green-100 text-green-700 rounded-xl font-medium">
                     Your Current Plan
                   </div>
-                </div>
-              ) : (
-                <div className="text-center">
+                ) : (
                   <Link
                     href="/select-certification"
                     className="block px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium"
                   >
                     🎯 Start Free
                   </Link>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             {/* Pro Plan */}
@@ -223,34 +190,36 @@ export default function PricingPage() {
                 </div>
               </div>
 
-              {user ? (
-                <div className="text-center space-y-3">
-                  <button
-                    onClick={() => handleCheckout('monthly')}
-                    disabled={loadingPlan !== null}
-                    className="block w-full px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium disabled:opacity-50"
-                  >
-                    {loadingPlan === 'monthly' ? 'Processing...' : '💳 Subscribe Monthly - $29/month'}
-                  </button>
-                  <button
-                    onClick={() => handleCheckout('yearly')}
-                    disabled={loadingPlan !== null}
-                    className="block w-full px-8 py-3 bg-gradient-to-r from-yellow-400 to-orange-400 text-green-900 rounded-xl hover:from-yellow-500 hover:to-orange-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium disabled:opacity-50"
-                  >
-                    {loadingPlan === 'yearly' ? 'Processing...' : '🎯 Subscribe Yearly - $99/year (Save $249!)'}
-                  </button>
-                </div>
-              ) : (
-                <div className="text-center">
-                  <Link
-                    href="/select-certification"
-                    className="block px-8 py-3 bg-gradient-to-r from-yellow-400 to-orange-400 text-green-900 rounded-xl hover:from-yellow-500 hover:to-orange-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium"
-                  >
-                    🎯 Start Your Journey
-                  </Link>
-                  <p className="text-xs text-green-600 mt-2">Select certification first, then upgrade inside</p>
-                </div>
-              )}
+              <div className="text-center space-y-3">
+                {isClient && user ? (
+                  <>
+                    <button
+                      onClick={() => handleCheckout('monthly')}
+                      disabled={loadingPlan !== null}
+                      className="block w-full px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium disabled:opacity-50"
+                    >
+                      {loadingPlan === 'monthly' ? 'Processing...' : '💳 Subscribe Monthly - $29/month'}
+                    </button>
+                    <button
+                      onClick={() => handleCheckout('yearly')}
+                      disabled={loadingPlan !== null}
+                      className="block w-full px-8 py-3 bg-gradient-to-r from-yellow-400 to-orange-400 text-green-900 rounded-xl hover:from-yellow-500 hover:to-orange-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium disabled:opacity-50"
+                    >
+                      {loadingPlan === 'yearly' ? 'Processing...' : '🎯 Subscribe Yearly - $99/year (Save $249!)'}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/select-certification"
+                      className="block px-8 py-3 bg-gradient-to-r from-yellow-400 to-orange-400 text-green-900 rounded-xl hover:from-yellow-500 hover:to-orange-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium"
+                    >
+                      🎯 Start Your Journey
+                    </Link>
+                    <p className="text-xs text-green-600 mt-2">Select certification first, then upgrade inside</p>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
