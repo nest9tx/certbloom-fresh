@@ -55,15 +55,24 @@ export interface ContentData {
   strategy?: string
   misconception?: string
   technique?: string
+  // Practice session specific properties
+  session_type?: string
+  target_question_count?: number
+  estimated_minutes?: number
+  description?: string
+  instructions?: string
+  concept_id?: string
+  difficulty_levels?: string[]
+  question_source?: string
   [key: string]: unknown // Allow additional properties
 }
 
 export interface ContentItem {
   id: string
   concept_id: string
-  type: 'text_explanation' | 'interactive_example' | 'practice_question' | 'real_world_scenario' | 'teaching_strategy' | 'common_misconception' | 'memory_technique'
+  type: 'text_explanation' | 'interactive_example' | 'practice_question' | 'real_world_scenario' | 'teaching_strategy' | 'common_misconception' | 'memory_technique' | 'practice' | 'explanation' | 'review'
   title: string
-  content: ContentData
+  content: ContentData | string
   order_index: number
   estimated_minutes: number
   is_required: boolean
@@ -93,6 +102,24 @@ export interface StudyPlan {
   daily_study_minutes: number
   current_concept_id: string | null
   is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+// Question interface for practice sessions
+export interface Question {
+  id: string
+  concept_id: string
+  question_text: string
+  answer_a: string
+  answer_b: string
+  answer_c: string
+  answer_d: string
+  correct_answer: 'A' | 'B' | 'C' | 'D'
+  explanation: string | null
+  difficulty_level: number
+  competency: string | null
+  skill: string | null
   created_at: string
   updated_at: string
 }
@@ -316,6 +343,53 @@ export async function getConceptsByDomain(domainId: string, userId?: string): Pr
 }
 
 // ============================================
+// QUESTION FUNCTIONS
+// ============================================
+
+export async function getQuestionsForConcept(
+  conceptId: string, 
+  limit?: number,
+  shuffle = true
+): Promise<Question[]> {
+  try {
+    let query = supabase
+      .from('questions')
+      .select('*')
+      .eq('concept_id', conceptId)
+
+    if (limit) {
+      query = query.limit(limit)
+    }
+
+    const { data: questions, error } = await query
+
+    if (error) {
+      console.error('Error fetching questions for concept:', error)
+      throw error
+    }
+
+    if (!questions || questions.length === 0) {
+      console.warn(`No questions found for concept ${conceptId}`)
+      return []
+    }
+
+    // Shuffle questions if requested
+    if (shuffle) {
+      for (let i = questions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [questions[i], questions[j]] = [questions[j], questions[i]]
+      }
+    }
+
+    console.log(`📚 Loaded ${questions.length} questions for concept ${conceptId}`)
+    return questions as Question[]
+  } catch (error) {
+    console.error('Unexpected error in getQuestionsForConcept:', error)
+    throw error
+  }
+}
+
+// ============================================
 // PROGRESS TRACKING FUNCTIONS
 // ============================================
 
@@ -483,7 +557,10 @@ export function getContentTypeLabel(type: ContentItem['type']): string {
     real_world_scenario: 'Real-World',
     teaching_strategy: 'Teaching',
     common_misconception: 'Misconception',
-    memory_technique: 'Memory Aid'
+    memory_technique: 'Memory Aid',
+    practice: 'Practice Session',
+    explanation: 'Explanation',
+    review: 'Review'
   }
   return labels[type] || type
 }

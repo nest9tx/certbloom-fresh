@@ -12,16 +12,14 @@ export async function GET() {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // Get questions with certification and topic info
-    const { data: questions, error: questionsError } = await supabase
+    // Get questions with concept, domain, and certification info using current schema
+    const { data: questionsData, error: questionsError } = await supabase
       .from('questions')
       .select(`
-        certification_id, 
+        id,
+        concept_id,
         difficulty_level,
-        domain,
-        concept,
-        certifications(name),
-        topics(name)
+        created_at
       `)
       .order('created_at', { ascending: false });
 
@@ -30,32 +28,55 @@ export async function GET() {
       return NextResponse.json({ error: 'Failed to fetch questions' }, { status: 500 });
     }
 
-    console.log('API: Found questions:', questions?.length || 0);
-    console.log('API: Sample question:', questions?.[0]);
+    // Get concept details separately for better type safety
+    const { data: conceptsData, error: conceptsError } = await supabase
+      .from('concepts')
+      .select(`
+        id,
+        name,
+        domains(
+          name,
+          certifications(
+            name,
+            test_code
+          )
+        )
+      `);
+
+    if (conceptsError) {
+      console.error('Error fetching concepts:', conceptsError);
+      return NextResponse.json({ error: 'Failed to fetch concepts' }, { status: 500 });
+    }
+
+    console.log('API: Found questions:', questionsData?.length || 0);
+    console.log('API: Found concepts:', conceptsData?.length || 0);
+
+    // Create concept lookup map
+    const conceptMap = new Map();
+    conceptsData?.forEach(concept => {
+      conceptMap.set(concept.id, concept);
+    });
 
     // Process statistics
     const stats = {
-      total: questions?.length || 0,
+      total: questionsData?.length || 0,
       byDomain: {} as Record<string, number>,
       byCertification: {} as Record<string, number>,
       byDifficulty: {} as Record<string, number>
     };
 
-    questions?.forEach(question => {
-      // Count by topic name (use topic instead of old domain field)
-      const topic = question.topics as unknown as { name: string } | null;
-      if (topic?.name) {
-        const topicName = topic.name;
-        stats.byDomain[topicName] = (stats.byDomain[topicName] || 0) + 1;
-      } else if (question.domain) {
-        // Fallback to domain field for questions without topics
-        stats.byDomain[question.domain] = (stats.byDomain[question.domain] || 0) + 1;
+    questionsData?.forEach(question => {
+      const concept = conceptMap.get(question.concept_id);
+      
+      // Count by domain name
+      if (concept?.domains?.name) {
+        const domainName = concept.domains.name;
+        stats.byDomain[domainName] = (stats.byDomain[domainName] || 0) + 1;
       }
 
       // Count by certification name
-      const certification = question.certifications as unknown as { name: string } | null;
-      if (certification?.name) {
-        const certName = certification.name;
+      if (concept?.domains?.certifications?.name) {
+        const certName = concept.domains.certifications.name;
         stats.byCertification[certName] = (stats.byCertification[certName] || 0) + 1;
       }
 

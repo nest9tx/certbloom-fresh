@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { ContentItem, ContentData, recordContentEngagement } from '../lib/conceptLearning'
+import { ContentItem, ContentData, recordContentEngagement, getQuestionsForConcept, Question } from '../lib/conceptLearning'
 import { useAuth } from '../../lib/auth-context'
 
 interface ContentRendererProps {
@@ -14,6 +14,14 @@ export default function ContentRenderer({ contentItem, onComplete }: ContentRend
   const [startTime] = useState(Date.now())
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null)
   const [showExplanation, setShowExplanation] = useState(false)
+  
+  // Practice session state
+  const [practiceQuestions, setPracticeQuestions] = useState<Question[]>([])
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  const [practiceAnswers, setPracticeAnswers] = useState<{[key: number]: string}>({})
+  const [showPracticeResults, setShowPracticeResults] = useState(false)
+  const [loadingQuestions, setLoadingQuestions] = useState(false)
+  const [practiceStarted, setPracticeStarted] = useState(false)
 
   // Reset state when content item changes to prevent persistence issues
   useEffect(() => {
@@ -37,6 +45,57 @@ export default function ContentRenderer({ contentItem, onComplete }: ContentRend
   const handleComplete = () => {
     const timeSpent = Math.floor((Date.now() - startTime) / 1000)
     onComplete?.(timeSpent)
+  }
+
+  // Load questions for practice session
+  const loadPracticeQuestions = async () => {
+    if (!contentItem.concept_id) return
+    
+    setLoadingQuestions(true)
+    try {
+      const questions = await getQuestionsForConcept(contentItem.concept_id, 15, true) // 15 questions, shuffled
+      setPracticeQuestions(questions)
+      setCurrentQuestionIndex(0)
+      setPracticeAnswers({})
+      setShowPracticeResults(false)
+      setPracticeStarted(true)
+    } catch (error) {
+      console.error('Error loading practice questions:', error)
+    } finally {
+      setLoadingQuestions(false)
+    }
+  }
+
+  // Handle practice question answer
+  const handlePracticeAnswer = (questionIndex: number, answer: string) => {
+    setPracticeAnswers(prev => ({
+      ...prev,
+      [questionIndex]: answer
+    }))
+  }
+
+  // Move to next practice question
+  const nextPracticeQuestion = () => {
+    if (currentQuestionIndex < practiceQuestions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1)
+    } else {
+      setShowPracticeResults(true)
+    }
+  }
+
+  // Calculate practice session results
+  const calculatePracticeResults = () => {
+    let correct = 0
+    practiceQuestions.forEach((question, index) => {
+      if (practiceAnswers[index] === question.correct_answer) {
+        correct++
+      }
+    })
+    return {
+      correct,
+      total: practiceQuestions.length,
+      percentage: Math.round((correct / practiceQuestions.length) * 100)
+    }
   }
 
   const renderTextExplanation = (content: ContentData) => (
@@ -92,7 +151,44 @@ export default function ContentRenderer({ contentItem, onComplete }: ContentRend
     </div>
   )
 
-  const renderPracticeQuestion = (content: ContentData) => (
+  const renderPracticeQuestion = (content: ContentData) => {
+    // Check if this is a full practice session
+    if (content.session_type === 'full_concept_practice') {
+      return (
+        <div className="bg-green-50 border-l-4 border-green-400 p-6 rounded-r-lg">
+          <h3 className="text-lg font-semibold text-green-900 mb-4">🎯 Full Practice Session</h3>
+          <div className="text-gray-700 mb-4">
+            <p>{content.description || `Complete a comprehensive practice session for ${contentItem.title}`}</p>
+            <div className="mt-3 space-y-2">
+              <div className="flex items-center text-sm text-gray-600">
+                <span className="font-medium">📊 Questions:</span>
+                <span className="ml-2">{content.target_question_count || 25} from test bank</span>
+              </div>
+              <div className="flex items-center text-sm text-gray-600">
+                <span className="font-medium">⏱️ Time:</span>
+                <span className="ml-2">~{content.estimated_minutes || 25} minutes</span>
+              </div>
+              <div className="flex items-center text-sm text-gray-600">
+                <span className="font-medium">🎲 Format:</span>
+                <span className="ml-2">Mixed difficulty levels</span>
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              // Navigate to practice session for this specific concept with full session
+              window.location.href = `/practice/session?concept=${contentItem.concept_id}&mode=full&questions=${content.target_question_count || 25}`;
+            }}
+            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-semibold"
+          >
+            Start {content.target_question_count || 25}-Question Session →
+          </button>
+        </div>
+      )
+    }
+
+    // Regular practice question (single question)
+    return (
     <div className="bg-purple-50 border-l-4 border-purple-400 p-6 rounded-r-lg">
       <h3 className="text-lg font-semibold text-purple-900 mb-4">🎯 Practice Question</h3>
       {content.question && (
@@ -158,7 +254,8 @@ export default function ContentRenderer({ contentItem, onComplete }: ContentRend
         </button>
       )}
     </div>
-  )
+    )
+  }
 
   const renderRealWorldScenario = (content: ContentData) => (
     <div className="bg-orange-50 border-l-4 border-orange-400 p-6 rounded-r-lg">
@@ -228,22 +325,179 @@ export default function ContentRenderer({ contentItem, onComplete }: ContentRend
     </div>
   )
 
+  const renderPracticeSession = () => {
+    // If practice hasn't started, show the start screen
+    if (!practiceStarted) {
+      return (
+        <div className="bg-green-50 border-l-4 border-green-400 p-6 rounded-r-lg">
+          <h3 className="text-lg font-semibold text-green-900 mb-4">🎯 Practice Session</h3>
+          <div className="text-gray-700 mb-4">
+            <p>Ready to practice {contentItem.title}? This session will test your understanding with real exam questions.</p>
+            <p className="text-sm text-gray-600 mt-2">You&apos;ll work through up to 15 questions to build mastery of this concept.</p>
+          </div>
+          <button
+            onClick={loadPracticeQuestions}
+            disabled={loadingQuestions}
+            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-semibold disabled:opacity-50"
+          >
+            {loadingQuestions ? 'Loading Questions...' : 'Start Practice Session →'}
+          </button>
+        </div>
+      )
+    }
+
+    // If no questions loaded, show error
+    if (practiceQuestions.length === 0) {
+      return (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-r-lg">
+          <h3 className="text-lg font-semibold text-yellow-900 mb-4">⚠️ No Questions Available</h3>
+          <div className="text-gray-700 mb-4">
+            <p>There are no practice questions available for this concept yet.</p>
+          </div>
+          <button
+            onClick={handleComplete}
+            className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
+          >
+            Continue Learning ✓
+          </button>
+        </div>
+      )
+    }
+
+    // Show results screen
+    if (showPracticeResults) {
+      const results = calculatePracticeResults()
+      return (
+        <div className="bg-blue-50 border-l-4 border-blue-400 p-6 rounded-r-lg">
+          <h3 className="text-lg font-semibold text-blue-900 mb-4">📊 Practice Session Complete!</h3>
+          <div className="text-gray-700 mb-4">
+            <div className="bg-white p-4 rounded-lg border border-blue-200 mb-4">
+              <h4 className="font-semibold text-blue-800 mb-2">Your Results:</h4>
+              <p className="text-2xl font-bold text-blue-900">{results.correct}/{results.total} ({results.percentage}%)</p>
+              <p className="text-sm text-gray-600 mt-1">
+                {results.percentage >= 80 ? 'Excellent work! You\'ve mastered this concept.' : 
+                 results.percentage >= 60 ? 'Good progress! Review the questions you missed.' :
+                 'Keep practicing! Review the explanations and try again.'}
+              </p>
+            </div>
+            <p>You&apos;ve completed the practice session for {contentItem.title}.</p>
+          </div>
+          <button
+            onClick={handleComplete}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+          >
+            Continue Learning ✓
+          </button>
+        </div>
+      )
+    }
+
+    // Show current question
+    const currentQuestion = practiceQuestions[currentQuestionIndex]
+    const currentAnswer = practiceAnswers[currentQuestionIndex]
+    
+    return (
+      <div className="bg-purple-50 border-l-4 border-purple-400 p-6 rounded-r-lg">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-purple-900">🎯 Practice Question {currentQuestionIndex + 1}/{practiceQuestions.length}</h3>
+          <div className="bg-purple-200 px-3 py-1 rounded-full text-sm font-medium text-purple-800">
+            Progress: {currentQuestionIndex + 1}/{practiceQuestions.length}
+          </div>
+        </div>
+        
+        <div className="bg-white p-4 rounded-lg border border-purple-200 mb-4">
+          <h4 className="font-medium text-purple-800 mb-3">{currentQuestion.question_text}</h4>
+          <div className="space-y-2">
+            {[
+              { key: 'A', text: currentQuestion.answer_a },
+              { key: 'B', text: currentQuestion.answer_b },
+              { key: 'C', text: currentQuestion.answer_c },
+              { key: 'D', text: currentQuestion.answer_d }
+            ].map((option) => (
+              <button
+                key={option.key}
+                onClick={() => handlePracticeAnswer(currentQuestionIndex, option.key)}
+                className={`w-full text-left p-3 rounded-lg border-2 transition-colors ${
+                  currentAnswer === option.key
+                    ? 'bg-purple-100 border-purple-500 text-purple-900 font-bold'
+                    : 'bg-white border-gray-300 text-gray-800 hover:border-purple-300 hover:bg-purple-50'
+                }`}
+              >
+                <span className="font-bold mr-2">{option.key})</span> {option.text}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {currentAnswer && (
+          <div className="flex justify-between items-center">
+            <div className="text-sm text-gray-600">
+              Question {currentQuestionIndex + 1} of {practiceQuestions.length}
+            </div>
+            <button
+              onClick={nextPracticeQuestion}
+              className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors font-medium"
+            >
+              {currentQuestionIndex < practiceQuestions.length - 1 ? 'Next Question →' : 'View Results →'}
+            </button>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const renderExplanation = () => (
+    <div className="bg-blue-50 border-l-4 border-blue-400 p-6 rounded-r-lg">
+      <h3 className="text-lg font-semibold text-blue-900 mb-4">📚 {contentItem.title}</h3>
+      <div className="text-gray-700 mb-4">
+        <p>{typeof contentItem.content === 'string' ? contentItem.content : 'Loading content...'}</p>
+      </div>
+      <button
+        onClick={handleComplete}
+        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+      >
+        Continue ✓
+      </button>
+    </div>
+  )
+
+  const renderReview = () => (
+    <div className="bg-purple-50 border-l-4 border-purple-400 p-6 rounded-r-lg">
+      <h3 className="text-lg font-semibold text-purple-900 mb-4">📝 {contentItem.title}</h3>
+      <div className="text-gray-700 mb-4">
+        <p>{typeof contentItem.content === 'string' ? contentItem.content : 'Loading content...'}</p>
+      </div>
+      <button
+        onClick={handleComplete}
+        className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+      >
+        Complete Review ✓
+      </button>
+    </div>
+  )
+
   const renderContent = () => {
     switch (contentItem.type) {
+      case 'practice':
+        return renderPracticeSession()
+      case 'explanation':
+        return renderExplanation()
+      case 'review':
+        return renderReview()
       case 'text_explanation':
-        return renderTextExplanation(contentItem.content)
+        return typeof contentItem.content === 'object' ? renderTextExplanation(contentItem.content) : renderExplanation()
       case 'interactive_example':
-        return renderInteractiveExample(contentItem.content)
+        return typeof contentItem.content === 'object' ? renderInteractiveExample(contentItem.content) : renderExplanation()
       case 'practice_question':
-        return renderPracticeQuestion(contentItem.content)
+        return typeof contentItem.content === 'object' ? renderPracticeQuestion(contentItem.content) : renderExplanation()
       case 'real_world_scenario':
-        return renderRealWorldScenario(contentItem.content)
+        return typeof contentItem.content === 'object' ? renderRealWorldScenario(contentItem.content) : renderExplanation()
       case 'teaching_strategy':
-        return renderTeachingStrategy(contentItem.content)
+        return typeof contentItem.content === 'object' ? renderTeachingStrategy(contentItem.content) : renderExplanation()
       case 'common_misconception':
-        return renderCommonMisconception(contentItem.content)
+        return typeof contentItem.content === 'object' ? renderCommonMisconception(contentItem.content) : renderExplanation()
       case 'memory_technique':
-        return renderMemoryTechnique(contentItem.content)
+        return typeof contentItem.content === 'object' ? renderMemoryTechnique(contentItem.content) : renderExplanation()
       default:
         return <div>Unknown content type: {contentItem.type}</div>
     }
