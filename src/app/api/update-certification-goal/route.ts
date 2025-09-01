@@ -76,7 +76,9 @@ export async function POST(request: NextRequest) {
     const CERTIFICATION_MAPPING = {
       'Math EC-6': '902',
       'TExES Core Subjects EC-6: Mathematics (902)': '902',
-      'Elementary Mathematics': '902'
+      'Elementary Mathematics': '902',
+      'Fine Arts EC-6': '905',
+      'TExES Core Subjects EC-6: Fine Arts, Health and PE (905)': '905'
     };
 
     const testCode = CERTIFICATION_MAPPING[certificationGoal as keyof typeof CERTIFICATION_MAPPING];
@@ -107,6 +109,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 4: Create or update study plan (using service role to bypass RLS)
+    
+    // First, deactivate any existing active study plans for this user
+    await adminSupabase
+      .from('study_plans')
+      .update({ is_active: false })
+      .eq('user_id', user.id)
+      .eq('is_active', true);
+
     const studyPlanData = {
       user_id: user.id,
       certification_id: certification.id,

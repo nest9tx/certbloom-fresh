@@ -48,6 +48,13 @@ const certificationOptions: CertificationOption[] = [
     category: 'elementary',
     testCode: '904'
   },
+  {
+    id: 'Fine Arts EC-6',
+    name: 'TExES Core Subjects EC-6: Fine Arts, Health and PE (905)',
+    description: 'Early Childhood through 6th Grade Fine Arts, Health and Physical Education',
+    category: 'elementary',
+    testCode: '905'
+  },
 
   // Middle School (4-8)
   {
