@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { ContentItem, ContentData, recordContentEngagement, getQuestionsForConcept, Question } from '../lib/conceptLearning'
 import { useAuth } from '../../lib/auth-context'
 
@@ -22,6 +22,7 @@ export default function ContentRenderer({ contentItem, onComplete }: ContentRend
   const [showPracticeResults, setShowPracticeResults] = useState(false)
   const [loadingQuestions, setLoadingQuestions] = useState(false)
   const [practiceStarted, setPracticeStarted] = useState(false)
+  const [sessionResults, setSessionResults] = useState<{correct: number, total: number, percentage: number} | null>(null)
 
   // Reset state when content item changes to prevent persistence issues
   useEffect(() => {
@@ -29,6 +30,74 @@ export default function ContentRenderer({ contentItem, onComplete }: ContentRend
     setSelectedAnswer(null);
     setShowExplanation(false);
   }, [contentItem.id]);
+
+  // Calculate practice session results and save them
+  const calculatePracticeResults = useCallback(async () => {
+    let correct = 0
+    const questionIds: string[] = []
+    const userAnswers: string[] = []
+    
+    practiceQuestions.forEach((question, index) => {
+      questionIds.push(question.id)
+      userAnswers.push(practiceAnswers[index] || '')
+      if (practiceAnswers[index] === question.correct_answer) {
+        correct++
+      }
+    })
+    
+    const results = {
+      correct,
+      total: practiceQuestions.length,
+      percentage: Math.round((correct / practiceQuestions.length) * 100)
+    }
+    
+    // Save session results to database
+    if (user && contentItem.concept_id) {
+      try {
+        console.log('💾 Saving session results...', {
+          userId: user.id,
+          conceptId: contentItem.concept_id,
+          results
+        })
+        
+        const sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        
+        const response = await fetch('/api/complete-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            sessionId,
+            userAnswers,
+            questionIds,
+            conceptId: contentItem.concept_id,
+            userId: user.id
+          })
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          console.log('✅ Session saved successfully:', data)
+        } else {
+          console.error('❌ Failed to save session:', await response.text())
+        }
+      } catch (error) {
+        console.error('❌ Error saving session:', error)
+      }
+    }
+    
+    return results
+  }, [practiceQuestions, practiceAnswers, user, contentItem.concept_id])
+
+  // Handle results calculation and saving
+  useEffect(() => {
+    if (showPracticeResults && !sessionResults && practiceQuestions.length > 0) {
+      calculatePracticeResults().then(results => {
+        setSessionResults(results)
+      })
+    }
+  }, [showPracticeResults, sessionResults, practiceQuestions.length, calculatePracticeResults])
 
   // Track engagement when component unmounts or content changes
   useEffect(() => {
@@ -80,21 +149,6 @@ export default function ContentRenderer({ contentItem, onComplete }: ContentRend
       setCurrentQuestionIndex(currentQuestionIndex + 1)
     } else {
       setShowPracticeResults(true)
-    }
-  }
-
-  // Calculate practice session results
-  const calculatePracticeResults = () => {
-    let correct = 0
-    practiceQuestions.forEach((question, index) => {
-      if (practiceAnswers[index] === question.correct_answer) {
-        correct++
-      }
-    })
-    return {
-      correct,
-      total: practiceQuestions.length,
-      percentage: Math.round((correct / practiceQuestions.length) * 100)
     }
   }
 
@@ -366,21 +420,31 @@ export default function ContentRenderer({ contentItem, onComplete }: ContentRend
 
     // Show results screen
     if (showPracticeResults) {
-      const results = calculatePracticeResults()
+      if (!sessionResults) {
+        return (
+          <div className="bg-blue-50 border-l-4 border-blue-400 p-6 rounded-r-lg">
+            <h3 className="text-lg font-semibold text-blue-900 mb-4">📊 Calculating Results...</h3>
+            <div className="text-gray-700">
+              <p>Please wait while we save your session results...</p>
+            </div>
+          </div>
+        )
+      }
+      
       return (
         <div className="bg-blue-50 border-l-4 border-blue-400 p-6 rounded-r-lg">
           <h3 className="text-lg font-semibold text-blue-900 mb-4">📊 Practice Session Complete!</h3>
           <div className="text-gray-700 mb-4">
             <div className="bg-white p-4 rounded-lg border border-blue-200 mb-4">
               <h4 className="font-semibold text-blue-800 mb-2">Your Results:</h4>
-              <p className="text-2xl font-bold text-blue-900">{results.correct}/{results.total} ({results.percentage}%)</p>
+              <p className="text-2xl font-bold text-blue-900">{sessionResults.correct}/{sessionResults.total} ({sessionResults.percentage}%)</p>
               <p className="text-sm text-gray-600 mt-1">
-                {results.percentage >= 80 ? 'Excellent work! You\'ve mastered this concept.' : 
-                 results.percentage >= 60 ? 'Good progress! Review the questions you missed.' :
-                 'Keep practicing! Review the explanations and try again.'}
+                {sessionResults.percentage >= 80 ? '🎉 Excellent work! You\'ve mastered this concept.' : 
+                 sessionResults.percentage >= 60 ? '📈 Good progress! Review the questions you missed.' :
+                 '📚 Keep practicing! Review the explanations and try again.'}
               </p>
             </div>
-            <p>You&apos;ve completed the practice session for {contentItem.title}.</p>
+            <p>Your progress has been saved and your mastery level updated!</p>
           </div>
           <button
             onClick={handleComplete}
