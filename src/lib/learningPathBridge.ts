@@ -13,10 +13,32 @@ interface UserCertificationSetup {
 
 // Map existing certification names to concept-based learning certification IDs
 const CERTIFICATION_MAPPING = {
-  'Math EC-6': '902', // Maps to TExES Core Subjects EC-6: Mathematics (902)
+  // Math EC-6 (902)
+  'Math EC-6': '902', 
   'TExES Core Subjects EC-6: Mathematics (902)': '902',
-  'Elementary Mathematics': '902'
-  // Add more mappings as we build out other certifications
+  'Elementary Mathematics': '902',
+  
+  // ELA EC-6 (901)
+  'ELA EC-6': '901',
+  'TExES Core Subjects EC-6: English Language Arts (901)': '901',
+  'English Language Arts EC-6': '901',
+  
+  // Core Subjects EC-6 (391)
+  'EC-6 Core Subjects': '391',
+  'TExES Core Subjects EC-6 (391)': '391',
+  'Core Subjects EC-6': '391',
+  
+  // Social Studies EC-6 (903)
+  'Social Studies EC-6': '903',
+  'TExES Core Subjects EC-6: Social Studies (903)': '903',
+  
+  // Science EC-6 (904)
+  'Science EC-6': '904',
+  'TExES Core Subjects EC-6: Science (904)': '904',
+  
+  // Fine Arts EC-6 (905)
+  'Fine Arts EC-6': '905',
+  'TExES Core Subjects EC-6: Fine Arts, Health and PE (905)': '905'
 }
 
 export async function setupUserLearningPath(setup: UserCertificationSetup): Promise<{
@@ -66,6 +88,12 @@ export async function setupUserLearningPath(setup: UserCertificationSetup): Prom
     }
 
     // Create structured study plan (this is the magic connection!)
+    console.log('🎯 Creating study plan for:', { 
+      userId: setup.userId, 
+      certificationId: certification.id, 
+      certificationName: setup.certificationGoal 
+    });
+    
     const studyPlan = await createStudyPlan(
       setup.userId,
       certification.id,
@@ -73,14 +101,23 @@ export async function setupUserLearningPath(setup: UserCertificationSetup): Prom
       setup.targetExamDate
     )
 
+    console.log('✅ Study plan created successfully:', studyPlan.id);
+
     // Mark this as their PRIMARY study plan (for guarantee purposes)
-    await supabase
+    const { error: updateError } = await supabase
       .from('study_plans')
       .update({ 
         name: `Primary: ${setup.certificationGoal}`,
-        is_active: true // Ensure it's active (we'll remove is_primary as it doesn't exist)
+        is_active: true
       })
       .eq('id', studyPlan.id)
+
+    if (updateError) {
+      console.error('❌ Error updating study plan:', updateError);
+      throw new Error(`Study plan update failed: ${updateError.message}`)
+    }
+
+    console.log('✅ Study plan updated with name and active status');
 
     return {
       success: true,

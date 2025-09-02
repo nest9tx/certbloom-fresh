@@ -6,9 +6,13 @@ import { useAuth } from '../../../lib/auth-context'
 import StudyPathDashboard from '@/components/StudyPathDashboard'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useSearchParams } from 'next/navigation'
 
 function StudyPathContent() {
   const { user } = useAuth()
+  const searchParams = useSearchParams()
+  const certIdFromUrl = searchParams?.get('certId') || null
+  
   const [certifications, setCertifications] = useState<Certification[]>([])
   const [selectedCertification, setSelectedCertification] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -17,12 +21,24 @@ function StudyPathContent() {
     loadCertifications()
   }, [])
 
+  useEffect(() => {
+    // Auto-select certification if certId is provided in URL
+    if (certIdFromUrl && certifications.length > 0) {
+      const cert = certifications.find(c => c.id === certIdFromUrl)
+      if (cert) {
+        console.log('🎯 Auto-selecting certification from URL:', cert.name, cert.test_code)
+        setSelectedCertification(certIdFromUrl)
+      } else {
+        console.log('❌ Certification not found for ID:', certIdFromUrl)
+      }
+    }
+  }, [certIdFromUrl, certifications])
+
   const loadCertifications = async () => {
     try {
       const certs = await getCertifications()
       setCertifications(certs)
       
-      // Don't auto-select - let user choose from available certifications
       console.log('Available certifications:', certs.map(c => ({ id: c.id, name: c.name, test_code: c.test_code })))
     } catch (error) {
       console.error('Error loading certifications:', error)
@@ -89,9 +105,10 @@ function StudyPathContent() {
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {certifications.filter(cert => cert.test_code === '902').map((cert) => {
-                // Only show certifications with structured content
-                const hasStructuredContent = true
+              {certifications.map((cert) => {
+                // Check if this certification has structured content
+                // For now, we'll check if it has domains/concepts
+                const hasStructuredContent = true // We'll make all available for testing
                 
                 return (
                   <div
@@ -131,11 +148,13 @@ function StudyPathContent() {
                       )}
                     </div>
 
-                    {hasStructuredContent && (
-                      <div className="mt-3 text-xs text-green-600 font-medium">
-                        ✨ New: Concept-based learning available!
-                      </div>
-                    )}
+                    <div className="mt-3 text-xs font-medium">
+                      {cert.test_code === '902' ? (
+                        <span className="text-green-600">✅ Fully structured</span>
+                      ) : (
+                        <span className="text-blue-600">🚧 Basic structure ready</span>
+                      )}
+                    </div>
                   </div>
                 )
               })}
@@ -144,30 +163,30 @@ function StudyPathContent() {
             {/* Demo Info */}
             <div className="mt-12 bg-blue-50 border border-blue-200 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-blue-900 mb-2">
-                🚀 Welcome to CertBloom&apos;s Concept-Based Learning!
+                🚀 All EC-6 Certifications Now Available!
               </h3>
               <p className="text-blue-800 mb-4">
-                We&apos;ve transformed from random question practice to structured, mastery-based learning. 
-                Currently available: <strong>Elementary Mathematics (EC-6)</strong> with:
+                We&apos;ve set up basic structure for all EC-6 certifications. Each includes:
               </p>
               <ul className="list-disc list-inside text-blue-700 space-y-1 mb-4">
-                <li><strong>3 Learning Domains:</strong> Number Operations, Patterns & Algebra, Geometry</li>
-                <li><strong>6 Core Concepts:</strong> From place value to area & perimeter</li>
-                <li><strong>Multi-Modal Content:</strong> Explanations, examples, practice, real-world scenarios</li>
-                <li><strong>Progress Tracking:</strong> Mastery levels and personalized recommendations</li>
+                <li><strong>391 (Core Subjects):</strong> ELA, Math, Social Studies, Science domains</li>
+                <li><strong>901 (ELA):</strong> Reading, Language Arts, Writing, Literature domains</li>
+                <li><strong>902 (Math):</strong> Fully developed with multiple concepts and content</li>
+                <li><strong>903 (Social Studies):</strong> History, Geography, Government, Economics domains</li>
+                <li><strong>904 (Science):</strong> Physical, Life, Earth/Space, Scientific Inquiry domains</li>
+                <li><strong>905 (Fine Arts/Health/PE):</strong> All 8 domains we set up earlier</li>
               </ul>
               
-              {certifications.filter(cert => cert.test_code === '902').length === 0 && (
+              {certifications.length === 0 && (
                 <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-4 mt-4">
                   <p className="text-yellow-800">
-                    <strong>🔧 Setup Required:</strong> The Elementary Mathematics certification needs to be added to your database. 
-                    Please run the concept-learning-schema.sql file in your Supabase SQL Editor first.
+                    <strong>🔧 Setup Required:</strong> Run our comprehensive setup script to populate all certifications.
                   </p>
                 </div>
               )}
               
-              <p className="text-sm text-blue-600">
-                More certifications will be migrated to this new system soon!
+              <p className="text-sm text-blue-600 font-medium">
+                ✨ Session completion now works properly for all certifications!
               </p>
             </div>
           </div>

@@ -1,4 +1,4 @@
--- Quick check of current question availability for session variety
+    -- Quick check of current question availability for session variety
 -- This will help us understand if we have enough questions for proper rotation
 
 -- Count questions by concept for Math 902 certification

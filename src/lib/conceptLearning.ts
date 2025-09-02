@@ -149,7 +149,45 @@ export async function getCertifications(): Promise<Certification[]> {
     .order('name')
 
   if (error) throw error
-  return data || []
+  
+  const allCerts = data || []
+  
+  console.log('🔍 getCertifications debug:', {
+    totalCerts: allCerts.length,
+    allTestCodes: allCerts.map(c => c.test_code),
+    allNames: allCerts.map(c => c.name)
+  })
+  
+  // Filter to show only meaningful, primary certifications for EC-6 teachers
+  const primaryCertifications = allCerts.filter(cert => {
+    // Include main EC-6 Core Subjects (comprehensive exam)
+    if (cert.test_code === '391') return true
+    
+    // Include individual EC-6 subject tests (for teachers focusing on specific subjects)
+    if (['901', '902', '903', '904', '905'].includes(cert.test_code)) {
+      console.log(`✅ Including individual EC-6 subject: ${cert.test_code} (${cert.name})`)
+      return true
+    }
+    
+    // Include PPR (required for all teachers)  
+    if (cert.test_code === '160') return true
+    
+    // Include 4-8 grade certifications (middle school teachers)
+    if (['117', '118', '119', '120'].includes(cert.test_code)) return true
+    
+    // For now, include other certifications (we can refine this later)
+    console.log(`🤔 Including other certification: ${cert.test_code} (${cert.name})`)
+    return true
+  })
+  
+  console.log('✅ Final certification list:', {
+    originalCount: allCerts.length,
+    filteredCount: primaryCertifications.length,
+    finalTestCodes: primaryCertifications.map(c => c.test_code),
+    finalNames: primaryCertifications.map(c => c.name)
+  })
+  
+  return primaryCertifications
 }
 
 // Raw Supabase response types

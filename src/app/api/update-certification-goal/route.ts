@@ -74,9 +74,30 @@ export async function POST(request: NextRequest) {
 
     // Step 2: Check if this certification has structured content
     const CERTIFICATION_MAPPING = {
+      // Math EC-6 (902)
       'Math EC-6': '902',
       'TExES Core Subjects EC-6: Mathematics (902)': '902',
       'Elementary Mathematics': '902',
+      
+      // ELA EC-6 (901)
+      'ELA EC-6': '901',
+      'TExES Core Subjects EC-6: English Language Arts (901)': '901',
+      'English Language Arts EC-6': '901',
+      
+      // Core Subjects EC-6 (391)
+      'EC-6 Core Subjects': '391',
+      'TExES Core Subjects EC-6 (391)': '391',
+      'Core Subjects EC-6': '391',
+      
+      // Social Studies EC-6 (903)
+      'Social Studies EC-6': '903',
+      'TExES Core Subjects EC-6: Social Studies (903)': '903',
+      
+      // Science EC-6 (904)
+      'Science EC-6': '904',
+      'TExES Core Subjects EC-6: Science (904)': '904',
+      
+      // Fine Arts EC-6 (905)
       'Fine Arts EC-6': '905',
       'TExES Core Subjects EC-6: Fine Arts, Health and PE (905)': '905'
     };
@@ -110,42 +131,105 @@ export async function POST(request: NextRequest) {
 
     // Step 4: Create or update study plan (using service role to bypass RLS)
     
-    // First, deactivate any existing active study plans for this user
-    await adminSupabase
+    console.log('🎯 About to create/update study plan for user:', user.id, 'certification:', certification.id);
+    
+    // First, deactivate any existing active study plans for this user (for other certifications)
+    const { error: deactivateError } = await adminSupabase
       .from('study_plans')
       .update({ is_active: false })
       .eq('user_id', user.id)
+      .neq('certification_id', certification.id)
       .eq('is_active', true);
 
-    const studyPlanData = {
-      user_id: user.id,
-      certification_id: certification.id,
-      name: `Primary: ${certificationGoal}`,
-      daily_study_minutes: 30,
-      is_active: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+    if (deactivateError) {
+      console.error('❌ Error deactivating existing study plans:', deactivateError);
+      // Continue anyway - this is not critical
+    }
 
-    // Create new study plan
-    const { data: studyPlan, error: planError } = await adminSupabase
+    // Check if a study plan already exists for this user and certification
+    const { data: existingPlan, error: checkError } = await adminSupabase
       .from('study_plans')
-      .insert(studyPlanData)
       .select('id')
+      .eq('user_id', user.id)
+      .eq('certification_id', certification.id)
       .single();
 
-    if (planError) {
-      console.error('❌ Study plan creation error:', planError);
-      // Log more details about the error
-      console.error('❌ Study plan data attempted:', studyPlanData);
-      console.error('❌ Full error details:', JSON.stringify(planError, null, 2));
+    if (checkError && checkError.code !== 'PGRST116') {
+      // PGRST116 means "no rows found" which is fine
+      console.error('❌ Error checking existing study plan:', checkError);
       return NextResponse.json(
-        { error: `Study plan creation failed: ${planError.message}. Details: ${planError.details || 'No additional details'}` },
+        { error: `Error checking existing study plan: ${checkError.message}` },
         { status: 500 }
       );
     }
 
-    console.log('✅ Certification goal and study plan updated successfully');
+    let studyPlan;
+
+    if (existingPlan) {
+      // Update existing study plan
+      console.log('📝 Updating existing study plan:', existingPlan.id);
+      
+      const { data: updatedPlan, error: updateError } = await adminSupabase
+        .from('study_plans')
+        .update({
+          name: `Primary: ${certificationGoal}`,
+          daily_study_minutes: 30,
+          is_active: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingPlan.id)
+        .select('id')
+        .single();
+
+      if (updateError) {
+        console.error('❌ Study plan update error:', updateError);
+        return NextResponse.json(
+          { error: `Study plan update failed: ${updateError.message}` },
+          { status: 500 }
+        );
+      }
+
+      studyPlan = updatedPlan;
+      console.log('✅ Study plan updated successfully:', studyPlan.id);
+
+    } else {
+      // Create new study plan
+      console.log('📝 Creating new study plan');
+      
+      const studyPlanData = {
+        user_id: user.id,
+        certification_id: certification.id,
+        name: `Primary: ${certificationGoal}`,
+        daily_study_minutes: 30,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { data: newPlan, error: createError } = await adminSupabase
+        .from('study_plans')
+        .insert(studyPlanData)
+        .select('id')
+        .single();
+
+      if (createError) {
+        console.error('❌ Study plan creation error:', createError);
+        console.error('❌ Study plan data attempted:', studyPlanData);
+        console.error('❌ Full error details:', JSON.stringify(createError, null, 2));
+        
+        return NextResponse.json(
+          { 
+            error: `Study plan creation failed: ${createError.message}`, 
+            details: createError.details || 'No additional details',
+            code: createError.code || 'Unknown error code'
+          },
+          { status: 500 }
+        );
+      }
+
+      studyPlan = newPlan;
+      console.log('✅ Study plan created successfully:', studyPlan.id);
+    }
 
     return NextResponse.json({
       success: true,

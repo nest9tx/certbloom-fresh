@@ -166,7 +166,20 @@ export default function CertificationGoalSelector({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update certification goal');
+        console.error('❌ Server error response:', errorData);
+        
+        let errorMessage = errorData.error || 'Failed to update certification goal';
+        
+        // If there are debug details, include them for better troubleshooting
+        if (errorData.debugInfo) {
+          errorMessage += ` (Debug: ${JSON.stringify(errorData.debugInfo)})`;
+        }
+        
+        if (errorData.details) {
+          errorMessage += ` - ${errorData.details}`;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();

@@ -338,38 +338,22 @@ export default function StudyPathDashboard({ certificationId }: StudyPathDashboa
 
                     return (
                       <div key={concept.id} className="relative">
-                        <button
-                          onClick={handleConceptClick}
-                          disabled={isLocked}
-                          className={`w-full text-left p-4 rounded-lg border transition-all ${
-                            isLocked 
-                              ? 'bg-gray-100 border-gray-300 opacity-60 cursor-not-allowed'
-                              : 'hover:shadow-md ' + (
-                                isMastered
-                                  ? 'bg-green-50 border-green-200 hover:border-green-300'
-                                  : masteryLevel > 0
-                                  ? 'bg-yellow-50 border-yellow-200 hover:border-yellow-300'
-                                  : 'bg-gray-50 border-gray-200 hover:border-blue-300'
-                              )
-                          }`}
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <h4 className={`font-medium pr-2 ${isLocked ? 'text-gray-500' : 'text-gray-900'}`}>
-                              {concept.name}
-                              {isLocked && <span className="ml-2 text-gray-400">🔒</span>}
-                            </h4>
-                            {isMastered && !isLocked && (
-                              <span className="text-green-600 text-xl">✓</span>
+                        {isLocked ? (
+                          // Locked concept - use div instead of button to avoid nesting
+                          <div className="w-full text-left p-4 rounded-lg border bg-gray-100 border-gray-300 opacity-60">
+                            <div className="flex items-start justify-between mb-2">
+                              <h4 className="font-medium pr-2 text-gray-500">
+                                {concept.name}
+                                <span className="ml-2 text-gray-400">🔒</span>
+                              </h4>
+                            </div>
+
+                            {concept.description && (
+                              <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                                {concept.description}
+                              </p>
                             )}
-                          </div>
 
-                        {concept.description && (
-                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                            {concept.description}
-                          </p>
-                        )}
-
-                                                  {isLocked ? (
                             <div className="space-y-2">
                               <div className="text-center p-4 bg-blue-50 border border-blue-200 rounded-lg">
                                 <div className="text-blue-600 mb-2">🔒 Upgrade Required</div>
@@ -377,8 +361,7 @@ export default function StudyPathDashboard({ certificationId }: StudyPathDashboa
                                   Unlock all concepts with a Pro subscription
                                 </p>
                                 <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
+                                  onClick={() => {
                                     // Navigate to pricing page
                                     window.location.href = '/pricing'
                                   }}
@@ -388,7 +371,34 @@ export default function StudyPathDashboard({ certificationId }: StudyPathDashboa
                                 </button>
                               </div>
                             </div>
-                          ) : (
+                          </div>
+                        ) : (
+                          // Unlocked concept - regular button
+                          <button
+                            onClick={handleConceptClick}
+                            className={`w-full text-left p-4 rounded-lg border transition-all hover:shadow-md ${
+                              isMastered
+                                ? 'bg-green-50 border-green-200 hover:border-green-300'
+                                : masteryLevel > 0
+                                ? 'bg-yellow-50 border-yellow-200 hover:border-yellow-300'
+                                : 'bg-gray-50 border-gray-200 hover:border-blue-300'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <h4 className="font-medium pr-2 text-gray-900">
+                                {concept.name}
+                              </h4>
+                              {isMastered && (
+                                <span className="text-green-600 text-xl">✓</span>
+                              )}
+                            </div>
+
+                            {concept.description && (
+                              <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                                {concept.description}
+                              </p>
+                            )}
+
                             <div className="space-y-2">
                               {/* Progress Bar */}
                               <div className="w-full bg-gray-200 rounded-full h-2">
@@ -411,8 +421,8 @@ export default function StudyPathDashboard({ certificationId }: StudyPathDashboa
                                 </div>
                               )}
                             </div>
-                          )}
-                        </button>
+                          </button>
+                        )}
                       </div>
                     )
                   })}
