@@ -18,11 +18,13 @@ export default function ContentRenderer({ contentItem, onComplete }: ContentRend
   // Practice session state
   const [practiceQuestions, setPracticeQuestions] = useState<Question[]>([])
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
-  const [practiceAnswers, setPracticeAnswers] = useState<{[key: number]: string}>({})
+  const [practiceAnswers, setPracticeAnswers] = useState<{[key: number]: number}>({})
   const [showPracticeResults, setShowPracticeResults] = useState(false)
   const [loadingQuestions, setLoadingQuestions] = useState(false)
   const [practiceStarted, setPracticeStarted] = useState(false)
   const [sessionResults, setSessionResults] = useState<{correct: number, total: number, percentage: number} | null>(null)
+  const [currentQuestionAnswer, setCurrentQuestionAnswer] = useState<number | null>(null)
+  const [showCurrentExplanation, setShowCurrentExplanation] = useState(false)
 
   // Reset state when content item changes to prevent persistence issues
   useEffect(() => {
@@ -35,12 +37,19 @@ export default function ContentRenderer({ contentItem, onComplete }: ContentRend
   const calculatePracticeResults = useCallback(async () => {
     let correct = 0
     const questionIds: string[] = []
-    const userAnswers: string[] = []
+    const userAnswers: number[] = []
     
     practiceQuestions.forEach((question, index) => {
       questionIds.push(question.id)
-      userAnswers.push(practiceAnswers[index] || '')
-      if (practiceAnswers[index] === question.correct_answer) {
+      userAnswers.push(practiceAnswers[index] || 0)
+      
+      // Check if the selected answer is correct using choice_order
+      const selectedChoiceOrder = practiceAnswers[index]
+      const selectedChoice = question.answer_choices?.find(choice => 
+        choice.choice_order === selectedChoiceOrder
+      )
+      
+      if (selectedChoice && selectedChoice.is_correct) {
         correct++
       }
     })
@@ -135,18 +144,29 @@ export default function ContentRenderer({ contentItem, onComplete }: ContentRend
     }
   }
 
-  // Handle practice question answer
-  const handlePracticeAnswer = (questionIndex: number, answer: string) => {
+  // Handle practice question answer selection (allows changing selection)
+  const handleQuestionSelect = (questionIndex: number, choiceOrder: number) => {
+    setCurrentQuestionAnswer(choiceOrder)
+    setShowCurrentExplanation(false) // Reset explanation when selecting new answer
+  }
+
+  // Submit current question answer
+  const handleSubmitAnswer = () => {
+    if (!currentQuestionAnswer) return
+    
     setPracticeAnswers(prev => ({
       ...prev,
-      [questionIndex]: answer
+      [currentQuestionIndex]: currentQuestionAnswer
     }))
+    setShowCurrentExplanation(true)
   }
 
   // Move to next practice question
   const nextPracticeQuestion = () => {
     if (currentQuestionIndex < practiceQuestions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1)
+      setCurrentQuestionAnswer(null)
+      setShowCurrentExplanation(false)
     } else {
       setShowPracticeResults(true)
     }
@@ -458,7 +478,6 @@ export default function ContentRenderer({ contentItem, onComplete }: ContentRend
 
     // Show current question
     const currentQuestion = practiceQuestions[currentQuestionIndex]
-    const currentAnswer = practiceAnswers[currentQuestionIndex]
     
     return (
       <div className="bg-purple-50 border-l-4 border-purple-400 p-6 rounded-r-lg">
@@ -472,40 +491,78 @@ export default function ContentRenderer({ contentItem, onComplete }: ContentRend
         <div className="bg-white p-4 rounded-lg border border-purple-200 mb-4">
           <h4 className="font-medium text-purple-800 mb-3">{currentQuestion.question_text}</h4>
           <div className="space-y-2">
-            {[
-              { key: 'A', text: currentQuestion.answer_a },
-              { key: 'B', text: currentQuestion.answer_b },
-              { key: 'C', text: currentQuestion.answer_c },
-              { key: 'D', text: currentQuestion.answer_d }
-            ].map((option) => (
-              <button
-                key={option.key}
-                onClick={() => handlePracticeAnswer(currentQuestionIndex, option.key)}
-                className={`w-full text-left p-3 rounded-lg border-2 transition-colors ${
-                  currentAnswer === option.key
-                    ? 'bg-purple-100 border-purple-500 text-purple-900 font-bold'
-                    : 'bg-white border-gray-300 text-gray-800 hover:border-purple-300 hover:bg-purple-50'
-                }`}
-              >
-                <span className="font-bold mr-2">{option.key})</span> {option.text}
-              </button>
-            ))}
+            {currentQuestion.answer_choices?.sort((a, b) => a.choice_order - b.choice_order).map((choice) => {
+              const choiceKey = String.fromCharCode(64 + choice.choice_order);
+              let buttonClass = "w-full text-left p-3 rounded-lg border-2 transition-colors ";
+              
+              if (showCurrentExplanation) {
+                // Show correct/incorrect after submission
+                if (choice.is_correct) {
+                  buttonClass += "border-green-500 bg-green-100 text-green-900 font-bold";
+                } else if (choice.choice_order === currentQuestionAnswer && !choice.is_correct) {
+                  buttonClass += "border-red-500 bg-red-100 text-red-900 font-bold";
+                } else {
+                  buttonClass += "border-gray-300 bg-gray-100 text-gray-700";
+                }
+              } else {
+                // Allow selection before submission
+                if (choice.choice_order === currentQuestionAnswer) {
+                  buttonClass += "bg-purple-100 border-purple-500 text-purple-900 font-bold";
+                } else {
+                  buttonClass += "bg-white border-gray-300 text-gray-800 hover:border-purple-300 hover:bg-purple-50";
+                }
+              }
+              
+              return (
+                <button
+                  key={choice.choice_order}
+                  onClick={() => handleQuestionSelect(currentQuestionIndex, choice.choice_order)}
+                  disabled={showCurrentExplanation}
+                  className={buttonClass}
+                >
+                  <span className="font-bold mr-2">{choiceKey})</span> {choice.choice_text}
+                </button>
+              );
+            }) || (
+              <div className="text-gray-500 italic">No answer choices available</div>
+            )}
           </div>
         </div>
 
-        {currentAnswer && (
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-600">
-              Question {currentQuestionIndex + 1} of {practiceQuestions.length}
-            </div>
-            <button
-              onClick={nextPracticeQuestion}
-              className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors font-medium"
-            >
-              {currentQuestionIndex < practiceQuestions.length - 1 ? 'Next Question →' : 'View Results →'}
-            </button>
+        {/* Show explanation after submission */}
+        {showCurrentExplanation && (
+          <div className="bg-blue-50 rounded-lg p-4 mb-4">
+            <h4 className="font-semibold text-blue-800 mb-2">Explanation</h4>
+            <p className="text-blue-700">{currentQuestion.explanation || 'No explanation available for this question.'}</p>
           </div>
         )}
+
+        {/* Action buttons */}
+        <div className="flex justify-between items-center">
+          <div className="text-sm text-gray-600">
+            Question {currentQuestionIndex + 1} of {practiceQuestions.length}
+          </div>
+          
+          <div className="space-x-2">
+            {!showCurrentExplanation && currentQuestionAnswer && (
+              <button
+                onClick={handleSubmitAnswer}
+                className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium"
+              >
+                Submit Answer
+              </button>
+            )}
+            
+            {showCurrentExplanation && (
+              <button
+                onClick={nextPracticeQuestion}
+                className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors font-medium"
+              >
+                {currentQuestionIndex < practiceQuestions.length - 1 ? 'Next Question →' : 'View Results →'}
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     )
   }

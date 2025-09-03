@@ -194,12 +194,12 @@ function StudyPathContent() {
           // Study Path Dashboard
           <div>
             <div className="mb-6">
-              <button
-                onClick={() => setSelectedCertification(null)}
+              <Link
+                href="/dashboard"
                 className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
               >
-                ← Back to Certifications
-              </button>
+                ← Back to Dashboard
+              </Link>
             </div>
             <StudyPathDashboard certificationId={selectedCertification} />
           </div>

@@ -106,22 +106,36 @@ export interface StudyPlan {
   updated_at: string
 }
 
-// Question interface for practice sessions
+// Question interface for practice sessions (matches content_items table)
 export interface Question {
   id: string
-  concept_id: string
+  concept_id: string | null
   question_text: string
-  answer_a: string
-  answer_b: string
-  answer_c: string
-  answer_d: string
-  correct_answer: 'A' | 'B' | 'C' | 'D'
+  certification_area: string
+  subject_area: string | null
   explanation: string | null
-  difficulty_level: number
+  difficulty_level: number | null
   competency: string | null
   skill: string | null
+  choice_1: string | null
+  choice_2: string | null  
+  choice_3: string | null
+  choice_4: string | null
+  correct_choice: number | null
+  choice_order: string | null
+  answer_choices?: AnswerChoice[]
   created_at: string
   updated_at: string
+}
+
+// Answer choice interface
+export interface AnswerChoice {
+  id: string
+  content_item_id: string
+  choice_order: number
+  choice_text: string
+  is_correct: boolean
+  created_at: string
 }
 
 // Combined types for rich data
@@ -391,9 +405,25 @@ export async function getQuestionsForConcept(
 ): Promise<Question[]> {
   try {
     let query = supabase
-      .from('questions')
-      .select('*')
+      .from('content_items')
+      .select(`
+        id,
+        concept_id,
+        content,
+        explanation,
+        difficulty_level,
+        created_at,
+        updated_at,
+        answer_choices!content_item_id(
+          id,
+          choice_order,
+          choice_text,
+          is_correct,
+          created_at
+        )
+      `)
       .eq('concept_id', conceptId)
+      .eq('type', 'question')
 
     if (limit) {
       query = query.limit(limit)
@@ -411,16 +441,45 @@ export async function getQuestionsForConcept(
       return []
     }
 
+    // Transform to match Question interface 
+    const transformedQuestions = questions.map((item) => ({
+      id: item.id,
+      concept_id: item.concept_id,
+      question_text: item.content || '', // map content to question_text
+      certification_area: '', // will be populated from certification context
+      subject_area: null,
+      explanation: item.explanation || null,
+      difficulty_level: item.difficulty_level || null,
+      competency: null,
+      skill: null,
+      choice_1: null, // deprecated - use answer_choices
+      choice_2: null,
+      choice_3: null,
+      choice_4: null,
+      correct_choice: null, // deprecated - use answer_choices
+      choice_order: null,
+      answer_choices: item.answer_choices?.map((choice) => ({
+        id: choice.id,
+        content_item_id: item.id,
+        choice_order: choice.choice_order,
+        choice_text: choice.choice_text,
+        is_correct: choice.is_correct,
+        created_at: choice.created_at
+      })) || [],
+      created_at: item.created_at,
+      updated_at: item.updated_at
+    }))
+
     // Shuffle questions if requested
     if (shuffle) {
-      for (let i = questions.length - 1; i > 0; i--) {
+      for (let i = transformedQuestions.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [questions[i], questions[j]] = [questions[j], questions[i]]
+        [transformedQuestions[i], transformedQuestions[j]] = [transformedQuestions[j], transformedQuestions[i]]
       }
     }
 
-    console.log(`📚 Loaded ${questions.length} questions for concept ${conceptId}`)
-    return questions as Question[]
+    console.log(`📚 Loaded ${transformedQuestions.length} questions for concept ${conceptId}`)
+    return transformedQuestions as Question[]
   } catch (error) {
     console.error('Unexpected error in getQuestionsForConcept:', error)
     throw error

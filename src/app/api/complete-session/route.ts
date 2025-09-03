@@ -31,7 +31,8 @@ export async function POST(request: NextRequest) {
       sessionId,
       totalQuestions: questionIds.length,
       conceptId,
-      userId
+      userId,
+      questionIds: questionIds.slice(0, 3) // Log first 3 question IDs
     });
 
     // Create session if it doesn't exist
@@ -75,10 +76,13 @@ export async function POST(request: NextRequest) {
     const totalQuestions = questionIds.length;
     let correctAnswers = 0;
 
-    // Get correct answers for each question
+    // Get correct answers for each question (using clean content_items structure)
     const { data: questions, error: questionsError } = await adminSupabase
-      .from('questions')
-      .select('id, correct_answer')
+      .from('content_items')
+      .select(`
+        id,
+        answer_choices!content_item_id(choice_order, is_correct)
+      `)
       .in('id', questionIds);
 
     if (questionsError) {
@@ -89,9 +93,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check answers
+    console.log('📋 Found questions:', {
+      questionsCount: questions?.length,
+      sampleQuestion: questions?.[0] ? {
+        id: questions[0].id,
+        answerChoicesCount: questions[0].answer_choices?.length
+      } : null
+    });
+
+    // Check answers - userAnswers contains choice_order values (1,2,3,4)
     questions?.forEach((question, index) => {
-      if (question.correct_answer === userAnswers[index]) {
+      const correctChoice = question.answer_choices.find(choice => choice.is_correct);
+      const userAnswer = userAnswers[index];
+      
+      console.log(`🔍 Question ${index + 1} (ID: ${question.id}):`, {
+        userAnswer,
+        correctChoiceOrder: correctChoice?.choice_order,
+        isCorrect: correctChoice && correctChoice.choice_order === userAnswer
+      });
+      
+      if (correctChoice && correctChoice.choice_order === userAnswer) {
         correctAnswers++;
       }
     });
