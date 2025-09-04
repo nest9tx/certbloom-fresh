@@ -437,17 +437,19 @@ export async function getQuestionsForConcept(
   shuffle = true
 ): Promise<Question[]> {
   try {
+    // First try the questions table (preferred)
     let query = supabase
-      .from('content_items')
+      .from('questions')
       .select(`
         id,
-        concept_id,
-        content,
+        question_text,
+        certification_id,
+        topic_id,
         explanation,
         difficulty_level,
         created_at,
         updated_at,
-        answer_choices!content_item_id(
+        answer_choices!question_id(
           id,
           choice_order,
           choice_text,
@@ -456,51 +458,110 @@ export async function getQuestionsForConcept(
         )
       `)
       .eq('concept_id', conceptId)
-      .eq('type', 'question')
+      .eq('active', true)
 
     if (limit) {
       query = query.limit(limit)
     }
 
-    const { data: questions, error } = await query
+    let { data: questions, error } = await query
+
+    // If no questions found in questions table, try content_items as fallback
+    if (!questions || questions.length === 0) {
+      console.log(`No questions in questions table for concept ${conceptId}, trying content_items...`)
+      
+      let contentQuery = supabase
+        .from('content_items')
+        .select(`
+          id,
+          concept_id,
+          content,
+          explanation,
+          difficulty_level,
+          created_at,
+          updated_at,
+          answer_choices!content_item_id(
+            id,
+            choice_order,
+            choice_text,
+            is_correct,
+            created_at
+          )
+        `)
+        .eq('concept_id', conceptId)
+        .eq('type', 'question')
+
+      if (limit) {
+        contentQuery = contentQuery.limit(limit)
+      }
+
+      const { data: contentQuestions, error: contentError } = await contentQuery
+      
+      if (contentError) {
+        console.error('Error fetching questions from content_items:', contentError)
+        throw contentError
+      }
+
+      // Transform content_items to match questions table structure
+      questions = contentQuestions?.map((item) => ({
+        id: item.id,
+        question_text: item.content || '',
+        certification_id: null,
+        topic_id: null,
+        explanation: item.explanation || null,
+        difficulty_level: item.difficulty_level || null,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        answer_choices: item.answer_choices?.map((choice) => ({
+          id: choice.id,
+          choice_order: choice.choice_order,
+          choice_text: choice.choice_text,
+          is_correct: choice.is_correct,
+          created_at: choice.created_at
+        })) || []
+      })) || []
+
+      // Update error for the rest of the function
+      error = contentError
+    }
 
     if (error) {
-      console.error('Error fetching questions for concept:', error)
+      console.error('Error fetching questions:', error)
       throw error
     }
 
     if (!questions || questions.length === 0) {
-      console.warn(`No questions found for concept ${conceptId}`)
+      console.warn(`No questions found for concept ${conceptId} in either table`)
       return []
     }
 
-    // Transform to match Question interface 
-    const transformedQuestions = questions.map((item) => ({
-      id: item.id,
-      concept_id: item.concept_id,
-      question_text: item.content || '', // map content to question_text
-      certification_area: '', // will be populated from certification context
+    // Transform questions table results to match Question interface
+    const transformedQuestions = questions.map((question) => ({
+      id: question.id,
+      concept_id: conceptId,
+      question_text: question.question_text || '',
+      certification_area: '',
       subject_area: null,
-      explanation: item.explanation || null,
-      difficulty_level: item.difficulty_level || null,
+      explanation: question.explanation || null,
+      difficulty_level: question.difficulty_level || null,
       competency: null,
       skill: null,
-      choice_1: null, // deprecated - use answer_choices
+      choice_1: null,
       choice_2: null,
       choice_3: null,
       choice_4: null,
-      correct_choice: null, // deprecated - use answer_choices
+      correct_choice: null,
       choice_order: null,
-      answer_choices: item.answer_choices?.map((choice) => ({
+      answer_choices: question.answer_choices?.map((choice) => ({
         id: choice.id,
-        content_item_id: item.id,
+        content_item_id: question.id,
         choice_order: choice.choice_order,
         choice_text: choice.choice_text,
         is_correct: choice.is_correct,
         created_at: choice.created_at
       })) || [],
-      created_at: item.created_at,
-      updated_at: item.updated_at
+      created_at: question.created_at,
+      updated_at: question.updated_at
     }))
 
     // Shuffle questions if requested
