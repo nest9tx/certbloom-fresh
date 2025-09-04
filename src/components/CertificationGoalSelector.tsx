@@ -250,7 +250,7 @@ export default function CertificationGoalSelector({
             {categorizedOptions[activeCategory]?.map((option) => (
               <div
                 key={option.id}
-                onClick={() => setSelectedCertification(option.testCode || option.id)}
+                onClick={() => setSelectedCertification(option.testCode || option.id)} // Revert to saving test codes
                 className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-lg ${
                   selectedCertification === (option.testCode || option.id)
                     ? 'border-green-500 bg-green-50 shadow-lg'

@@ -49,12 +49,18 @@ export interface ContentData {
   example?: string
   question?: string
   answers?: string[]
+  choices?: string[]
   correct?: number
+  correct_answer?: number
   explanation?: string
   scenario?: string
   strategy?: string
   misconception?: string
   technique?: string
+  // Enhanced content structure
+  key_concepts?: string[]
+  teaching_strategies?: string[]
+  common_misconceptions?: string[]
   // Practice session specific properties
   session_type?: string
   target_question_count?: number

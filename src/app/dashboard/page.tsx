@@ -15,6 +15,7 @@ export default function DashboardPage() {
   const [breathingCount, setBreathingCount] = useState(0);
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'canceled' | 'free'>('free');
   const [userCertificationGoal, setUserCertificationGoal] = useState<string | null>(null);
+  const [certificationId, setCertificationId] = useState<string | null>(null);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [structuredLearningPath, setStructuredLearningPath] = useState<{
     hasStructuredPath: boolean;
@@ -29,6 +30,31 @@ export default function DashboardPage() {
     overallProgress: number;
     domainProgress: Array<{ name: string; completed: number; total: number; stage: string }>;
   } | null>(null);
+
+  // Convert test code to full name for display
+  const getCertificationDisplayName = (goal: string) => {
+    const certMap: Record<string, string> = {
+      '902': 'TExES Core Subjects EC-6: Mathematics (902)',
+      '391': 'TExES Core Subjects EC-6 (391)',
+      '901': 'TExES Core Subjects EC-6: English Language Arts (901)',
+      '903': 'TExES Core Subjects EC-6: Social Studies (903)',
+      '904': 'TExES Core Subjects EC-6: Science (904)'
+    };
+    return certMap[goal] || goal; // Return full name if it's a test code, otherwise return as-is
+  };
+
+  // Get certification ID from test code for linking to study path
+  const getCertificationId = async (testCode: string): Promise<string | null> => {
+    try {
+      const { getCertifications } = await import('../../lib/conceptLearning');
+      const certifications = await getCertifications();
+      const cert = certifications.find(c => c.test_code === testCode);
+      return cert?.id || null;
+    } catch (error) {
+      console.error('Error getting certification ID:', error);
+      return null;
+    }
+  };
 
   // Check for success parameter from URL (client-side only)
   useEffect(() => {
@@ -132,6 +158,12 @@ export default function DashboardPage() {
         setUserCertificationGoal(certificationGoal);
         setStructuredLearningPath(learningPath);
         
+        // Get certification ID for study path link
+        if (certificationGoal) {
+          const certId = await getCertificationId(certificationGoal);
+          setCertificationId(certId);
+        }
+        
         // Fetch progress data if user has structured path
         await fetchProgressData(learningPath);
         
@@ -159,8 +191,11 @@ export default function DashboardPage() {
     }
   };
 
-  const handleCertificationGoalUpdated = (newGoal: string) => {
+  const handleCertificationGoalUpdated = async (newGoal: string) => {
     setUserCertificationGoal(newGoal);
+    // Get certification ID for the new goal
+    const certId = await getCertificationId(newGoal);
+    setCertificationId(certId);
     // Refresh the structured learning path after goal update
     if (user) {
       fetchUserLearningPath();
@@ -299,9 +334,9 @@ export default function DashboardPage() {
             <h3 className="text-lg font-semibold text-green-800 mb-2">Certification Goal</h3>
             {userCertificationGoal ? (
               <div className="space-y-2">
-                <p className="text-blue-600 text-sm font-medium">{userCertificationGoal}</p>
+                <p className="text-blue-600 text-sm font-medium">{getCertificationDisplayName(userCertificationGoal)}</p>
                 <Link 
-                  href="/study-path"
+                  href={certificationId ? `/study-path?certId=${certificationId}` : '/study-path'}
                   className="inline-flex items-center px-3 py-2 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition-colors shadow-sm"
                 >
                   Start Learning Path →
