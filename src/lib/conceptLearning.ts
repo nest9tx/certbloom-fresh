@@ -358,21 +358,12 @@ export async function getConceptWithContent(conceptId: string, userId?: string):
 
 export async function getConceptsByDomain(domainId: string, userId?: string): Promise<ConceptWithContent[]> {
   try {
-    // Step 1: Get concepts with content items and answer choices
+    // Step 1: Get concepts with content items (simplified query to fix loading issue)
     const { data: conceptsData, error: conceptsError } = await supabase
       .from('concepts')
       .select(`
         *,
-        content_items (
-          *,
-          answer_choices!content_item_id(
-            id,
-            choice_order,
-            choice_text,
-            is_correct,
-            created_at
-          )
-        )
+        content_items (*)
       `)
       .eq('domain_id', domainId)
       .order('order_index')
@@ -385,17 +376,6 @@ export async function getConceptsByDomain(domainId: string, userId?: string): Pr
     if (!conceptsData) {
       return []
     }
-
-    // Transform content items to include question_text for question types
-    conceptsData.forEach(concept => {
-      if (concept.content_items) {
-        concept.content_items.forEach((item: ContentItem & { answer_choices?: AnswerChoice[] }) => {
-          if (item.type === 'question' && typeof item.content === 'string') {
-            item.question_text = item.content
-          }
-        })
-      }
-    })
 
     // Step 2: Get user progress if userId provided
     if (userId && conceptsData.length > 0) {
