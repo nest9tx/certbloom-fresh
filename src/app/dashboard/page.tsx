@@ -171,8 +171,10 @@ export default function DashboardPage() {
     if (!user) return;
     
     try {
+      console.log('🔍 Dashboard: Fetching learning path for user:', user.id);
       const { getUserPrimaryLearningPath } = await import('../../lib/learningPathBridge');
       const learningPath = await getUserPrimaryLearningPath(user.id);
+      console.log('🔍 Dashboard: Learning path result:', learningPath);
       setStructuredLearningPath(learningPath);
       
       // Also refresh progress data

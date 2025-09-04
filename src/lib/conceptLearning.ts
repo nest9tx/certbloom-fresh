@@ -70,7 +70,7 @@ export interface ContentData {
 export interface ContentItem {
   id: string
   concept_id: string
-  type: 'text_explanation' | 'interactive_example' | 'practice_question' | 'real_world_scenario' | 'teaching_strategy' | 'common_misconception' | 'memory_technique' | 'practice' | 'explanation' | 'review'
+  type: 'text_explanation' | 'interactive_example' | 'practice_question' | 'real_world_scenario' | 'teaching_strategy' | 'common_misconception' | 'memory_technique' | 'practice' | 'explanation' | 'review' | 'question'
   title: string
   content: ContentData | string
   order_index: number
@@ -78,6 +78,19 @@ export interface ContentItem {
   is_required: boolean
   created_at: string
   updated_at: string
+  // Question-specific fields (optional)
+  question_text?: string
+  explanation?: string
+  answer_choices?: AnswerChoice[]
+}
+
+export interface AnswerChoice {
+  id: string
+  content_item_id: string
+  choice_order: number
+  choice_text: string
+  is_correct: boolean
+  created_at: string
 }
 
 export interface ConceptProgress {
@@ -345,12 +358,21 @@ export async function getConceptWithContent(conceptId: string, userId?: string):
 
 export async function getConceptsByDomain(domainId: string, userId?: string): Promise<ConceptWithContent[]> {
   try {
-    // Step 1: Get concepts with content items
+    // Step 1: Get concepts with content items and answer choices
     const { data: conceptsData, error: conceptsError } = await supabase
       .from('concepts')
       .select(`
         *,
-        content_items (*)
+        content_items (
+          *,
+          answer_choices!content_item_id(
+            id,
+            choice_order,
+            choice_text,
+            is_correct,
+            created_at
+          )
+        )
       `)
       .eq('domain_id', domainId)
       .order('order_index')
@@ -363,6 +385,17 @@ export async function getConceptsByDomain(domainId: string, userId?: string): Pr
     if (!conceptsData) {
       return []
     }
+
+    // Transform content items to include question_text for question types
+    conceptsData.forEach(concept => {
+      if (concept.content_items) {
+        concept.content_items.forEach((item: ContentItem & { answer_choices?: AnswerChoice[] }) => {
+          if (item.type === 'question' && typeof item.content === 'string') {
+            item.question_text = item.content
+          }
+        })
+      }
+    })
 
     // Step 2: Get user progress if userId provided
     if (userId && conceptsData.length > 0) {
@@ -657,7 +690,8 @@ export function getContentTypeLabel(type: ContentItem['type']): string {
     memory_technique: 'Memory Aid',
     practice: 'Practice Session',
     explanation: 'Explanation',
-    review: 'Review'
+    review: 'Review',
+    question: 'Question'
   }
   return labels[type] || type
 }

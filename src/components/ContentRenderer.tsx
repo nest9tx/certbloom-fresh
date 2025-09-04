@@ -399,6 +399,78 @@ export default function ContentRenderer({ contentItem, onComplete }: ContentRend
     </div>
   )
 
+  const renderSingleQuestion = () => {
+    // For question type, content contains the question text
+    const questionText = typeof contentItem.content === 'string' ? contentItem.content : contentItem.question_text
+    
+    if (!questionText || !contentItem.answer_choices) {
+      return <div>Question data not available</div>
+    }
+
+    return (
+      <div className="bg-blue-50 border-l-4 border-blue-400 p-6 rounded-r-lg">
+        <h3 className="text-lg font-semibold text-blue-900 mb-4">❓ Question</h3>
+        <div className="mb-4">
+          <p className="text-gray-800 font-medium mb-4">{questionText}</p>
+          <div className="space-y-2">
+            {contentItem.answer_choices.map((choice, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  if (selectedAnswer === null) {
+                    setSelectedAnswer(index)
+                  }
+                }}
+                className={`w-full text-left p-3 rounded-lg border-2 transition-colors font-medium ${
+                  showExplanation
+                    ? (choice.is_correct
+                        ? 'bg-green-100 border-green-500 text-green-900 font-bold'
+                        : (selectedAnswer === index 
+                            ? 'bg-red-100 border-red-500 text-red-900 font-bold'
+                            : 'bg-gray-100 border-gray-400 text-gray-600'))
+                    : (selectedAnswer === index
+                        ? 'bg-blue-100 border-blue-500 text-blue-900 font-bold'
+                        : 'bg-white border-gray-500 text-black font-semibold hover:border-blue-500 hover:bg-blue-50 hover:text-blue-900')
+                }`}
+                disabled={showExplanation}
+              >
+                <span className="font-bold mr-2">{String.fromCharCode(65 + index)})</span> {choice.choice_text}
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        {/* Submit button when answer is selected but explanation not shown */}
+        {selectedAnswer !== null && !showExplanation && (
+          <div className="mt-4">
+            <button
+              onClick={() => setShowExplanation(true)}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              Submit Answer
+            </button>
+          </div>
+        )}
+        
+        {showExplanation && contentItem.explanation && (
+          <div className="bg-white p-4 rounded-lg border border-blue-200 mb-4">
+            <h4 className="font-medium text-blue-800 mb-2">Explanation:</h4>
+            <p className="text-gray-700">{contentItem.explanation}</p>
+          </div>
+        )}
+        
+        {showExplanation && (
+          <button
+            onClick={handleComplete}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Continue ✓
+          </button>
+        )}
+      </div>
+    )
+  }
+
   const renderPracticeSession = () => {
     // If practice hasn't started, show the start screen
     if (!practiceStarted) {
@@ -603,6 +675,8 @@ export default function ContentRenderer({ contentItem, onComplete }: ContentRend
         return renderPracticeSession()
       case 'explanation':
         return renderExplanation()
+      case 'question':
+        return renderSingleQuestion() // Add support for individual questions
       case 'review':
         return renderReview()
       case 'text_explanation':

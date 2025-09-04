@@ -169,10 +169,13 @@ export async function POST(request: NextRequest) {
       // Update existing study plan
       console.log('📝 Updating existing study plan:', existingPlan.id);
       
+      const updateName = `Primary: ${certificationGoal || certification.name || 'Math 902'}`;
+      console.log('📝 Updating study plan name to:', updateName);
+      
       const { data: updatedPlan, error: updateError } = await adminSupabase
         .from('study_plans')
         .update({
-          name: `Primary: ${certificationGoal}`,
+          name: updateName,
           daily_study_minutes: 30,
           is_active: true,
           updated_at: new Date().toISOString()
@@ -194,17 +197,22 @@ export async function POST(request: NextRequest) {
 
     } else {
       // Create new study plan
-      console.log('📝 Creating new study plan');
+      console.log('📝 Creating new study plan for certification:', certificationGoal);
+      
+      const studyPlanName = `Primary: ${certificationGoal || certification.name || 'Math 902'}`;
+      console.log('📝 Study plan name will be:', studyPlanName);
       
       const studyPlanData = {
         user_id: user.id,
         certification_id: certification.id,
-        name: `Primary: ${certificationGoal}`,
+        name: studyPlanName,
         daily_study_minutes: 30,
         is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
+
+      console.log('📝 Study plan data to insert:', JSON.stringify(studyPlanData, null, 2));
 
       const { data: newPlan, error: createError } = await adminSupabase
         .from('study_plans')
