@@ -296,7 +296,15 @@ export default function DashboardPage() {
             </div>
             <h3 className="text-lg font-semibold text-green-800 mb-2">Certification Goal</h3>
             {userCertificationGoal ? (
-              <p className="text-blue-600 text-sm font-medium">{userCertificationGoal}</p>
+              <div className="space-y-2">
+                <p className="text-blue-600 text-sm font-medium">{userCertificationGoal}</p>
+                <Link 
+                  href="/study-path"
+                  className="inline-flex items-center px-3 py-2 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+                >
+                  Start Learning Path →
+                </Link>
+              </div>
             ) : (
               <div className="space-y-3">
                 <p className="text-amber-600 text-sm font-medium">🌟 Let&apos;s get started!</p>

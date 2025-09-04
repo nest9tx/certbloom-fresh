@@ -9,13 +9,28 @@ import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
 
 function StudyPathContent() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const searchParams = useSearchParams()
   const certIdFromUrl = searchParams?.get('certId') || null
   
   const [certifications, setCertifications] = useState<Certification[]>([])
   const [selectedCertification, setSelectedCertification] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
+  // Debug auth state
+  console.log('🔍 StudyPath Auth Debug:', { 
+    user: user ? { id: user.id, email: user.email } : null, 
+    authLoading, 
+    loading 
+  })
+  
+  useEffect(() => {
+    console.log('🔍 StudyPath Auth State Changed:', { 
+      hasUser: !!user, 
+      authLoading, 
+      userKeys: user ? Object.keys(user) : []
+    })
+  }, [user, authLoading])
 
   useEffect(() => {
     loadCertifications()
@@ -47,23 +62,35 @@ function StudyPathContent() {
     }
   }
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading certifications...</p>
+          <p className="text-xs text-gray-400 mt-2">Auth loading: {authLoading ? 'true' : 'false'}, Data loading: {loading ? 'true' : 'false'}</p>
         </div>
       </div>
     )
   }
 
-  if (!user) {
+  if (!user && !authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Sign In Required</h1>
-          <p className="text-gray-600">Please sign in to access your personalized study paths.</p>
+          <p className="text-gray-600 mb-4">Please sign in to access your personalized study paths.</p>
+          <div className="text-xs text-gray-400 space-y-1">
+            <p>Auth loading: {authLoading ? 'true' : 'false'}</p>
+            <p>User: {user ? 'exists' : 'null'}</p>
+            <p>Debug: Check browser console for more details</p>
+          </div>
+          <Link 
+            href="/dashboard" 
+            className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Go to Dashboard
+          </Link>
         </div>
       </div>
     )
