@@ -4,21 +4,24 @@ import { createClient } from '@supabase/supabase-js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse): Promise<void> {
   if (req.method !== 'POST') {
     console.error('Method not allowed:', req.method);
-    return res.status(405).json({ error: 'Method not allowed' });
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
   }
 
   // Check required environment variables
   if (!process.env.STRIPE_SECRET_KEY) {
     console.error('Missing STRIPE_SECRET_KEY environment variable');
-    return res.status(500).json({ error: 'Stripe configuration error: Missing secret key' });
+    res.status(500).json({ error: 'Stripe configuration error: Missing secret key' });
+    return;
   }
   
   if (!process.env.STRIPE_MONTHLY_PRICE_ID) {
     console.error('Missing STRIPE_MONTHLY_PRICE_ID environment variable');
-    return res.status(500).json({ error: 'Stripe configuration error: Missing monthly price ID' });
+    res.status(500).json({ error: 'Stripe configuration error: Missing monthly price ID' });
+    return;
   }
   
   if (!process.env.STRIPE_YEARLY_PRICE_ID) {

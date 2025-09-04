@@ -29,12 +29,13 @@ export const config = {
   },
 };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse): Promise<void> {
   console.log('🔔 Webhook received:', req.method);
   
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
-    return res.status(405).end('Method Not Allowed');
+    res.status(405).end('Method Not Allowed');
+    return;
   }
 
   const buf = await buffer(req);
@@ -45,13 +46,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     if (!sig || !endpointSecret) {
       console.error('❌ Webhook Error: Missing Stripe signature or secret.');
-      return res.status(400).send('Webhook Error: Missing configuration.');
+      res.status(400).send('Webhook Error: Missing configuration.');
+      return;
     }
     event = stripe.webhooks.constructEvent(buf, sig, endpointSecret);
     console.log('✅ Webhook signature verified. Event type:', event.type);
   } catch (err) {
     console.error(`❌ Webhook signature verification failed: ${(err as Error).message}`);
-    return res.status(400).send(`Webhook Error: ${(err as Error).message}`);
+    res.status(400).send(`Webhook Error: ${(err as Error).message}`);
+    return;
   }
 
     // Handle the checkout.session.completed event
@@ -68,7 +71,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (!userId) {
       console.error('❌ Webhook Error: No userId in session metadata');
-      return res.status(400).send('Webhook Error: Missing user ID in metadata.');
+      res.status(400).send('Webhook Error: Missing user ID in metadata.');
+      return;
     }
 
     // Get subscription details to determine plan and end date
@@ -116,13 +120,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (error) {
         console.error(`❌ Supabase update error for user ${userId}:`, error);
-        return res.status(500).send(`Webhook Error: ${error.message}`);
+        res.status(500).send(`Webhook Error: ${error.message}`);
+        return;
       }
 
       console.log(`✅ Successfully updated subscription for user: ${userId}`);
     } catch (dbError) {
       console.error('❌ Webhook handler database error:', dbError);
-      return res.status(500).send('Webhook handler database error');
+      res.status(500).send('Webhook handler database error');
+      return;
     }
   }
 
