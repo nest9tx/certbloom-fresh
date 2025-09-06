@@ -101,7 +101,7 @@ export default function AnalyticsPage() {
                 Back to Dashboard
               </Link>
               <Link 
-                href="/study-path"
+                href="/enhanced-learning"
                 className="px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium"
               >
                 Continue Learning

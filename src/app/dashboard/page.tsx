@@ -2,7 +2,7 @@
 
 import { useAuth } from '../../../lib/auth-context';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import CertificationGoalSelector from '../../components/CertificationGoalSelector';
@@ -15,21 +15,8 @@ export default function DashboardPage() {
   const [breathingCount, setBreathingCount] = useState(0);
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'canceled' | 'free'>('free');
   const [userCertificationGoal, setUserCertificationGoal] = useState<string | null>(null);
-  const [certificationId, setCertificationId] = useState<string | null>(null);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-  const [structuredLearningPath, setStructuredLearningPath] = useState<{
-    hasStructuredPath: boolean;
-    certificationName?: string;
-    certificationId?: string;
-  }>({ hasStructuredPath: false });
-  const [isLoadingDashboard, setIsLoadingDashboard] = useState(true);
   const [showCertificationSelector, setShowCertificationSelector] = useState(false);
-  const [progressData, setProgressData] = useState<{
-    conceptsCompleted: number;
-    totalConcepts: number;
-    overallProgress: number;
-    domainProgress: Array<{ name: string; completed: number; total: number; stage: string }>;
-  } | null>(null);
 
   // Convert test code to full name for display
   const getCertificationDisplayName = (goal: string) => {
@@ -40,182 +27,63 @@ export default function DashboardPage() {
       '903': 'TExES Core Subjects EC-6: Social Studies (903)',
       '904': 'TExES Core Subjects EC-6: Science (904)'
     };
-    return certMap[goal] || goal; // Return full name if it's a test code, otherwise return as-is
+    return certMap[goal] || goal;
   };
 
-  // Get certification ID from test code for linking to study path
-  const getCertificationId = async (testCode: string): Promise<string | null> => {
-    try {
-      const { getCertifications } = await import('../../lib/conceptLearning');
-      const certifications = await getCertifications();
-      const cert = certifications.find(c => c.test_code === testCode);
-      return cert?.id || null;
-    } catch (error) {
-      console.error('Error getting certification ID:', error);
-      return null;
-    }
+  // Handle certification goal updates
+  const handleCertificationGoalUpdate = (goal: string) => {
+    setUserCertificationGoal(goal);
+    setShowCertificationSelector(false);
+    setShowSuccessMessage(true);
+    
+    // Update URL to remove success parameter
+    const newUrl = window.location.pathname;
+    router.replace(newUrl);
+    setTimeout(() => setShowSuccessMessage(false), 5000);
   };
 
-  // Check for success parameter from URL (client-side only)
+  // Check for success message in URL
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const success = urlParams.get('success');
-      if (success === 'true') {
-        setShowSuccessMessage(true);
-        const newUrl = window.location.pathname;
-        router.replace(newUrl);
-        setTimeout(() => setShowSuccessMessage(false), 5000);
-      }
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('success') === 'certification-goal-set') {
+      setShowSuccessMessage(true);
+      // Clean up URL
+      const newUrl = window.location.pathname;
+      router.replace(newUrl);
+      setTimeout(() => setShowSuccessMessage(false), 5000);
     }
   }, [router]);
-
-  // Define fetchProgressData with useCallback to prevent infinite re-renders
-  const fetchProgressData = useCallback(async (learningPath: typeof structuredLearningPath) => {
-    if (!user || !learningPath.hasStructuredPath || !learningPath.certificationId) {
-      console.log('📊 No structured path found, skipping progress fetch');
-      return;
-    }
-
-    try {
-      console.log('📊 Fetching progress data for certification:', learningPath.certificationId);
-      const { getCertificationWithFullStructure } = await import('../../lib/conceptLearning');
-      const certData = await getCertificationWithFullStructure(learningPath.certificationId, user.id);
-      
-      if (certData && certData.domains) {
-        // Calculate progress same as StudyPathDashboard
-        const allConcepts = certData.domains.flatMap(d => d.concepts);
-        const completedConcepts = allConcepts.filter(concept => {
-          const progress = concept.user_progress ? 
-            (Array.isArray(concept.user_progress) ? concept.user_progress[0] : concept.user_progress) 
-            : undefined;
-          return progress?.is_mastered || false;
-        });
-
-        const overallProgress = allConcepts.length > 0 ? 
-          Math.round((completedConcepts.length / allConcepts.length) * 100) : 0;
-
-        // Calculate domain-wise progress for mastery journey
-        const domainProgress = certData.domains.map(domain => {
-          const domainConcepts = domain.concepts || [];
-          const domainCompleted = domainConcepts.filter(concept => {
-            const progress = concept.user_progress ? 
-              (Array.isArray(concept.user_progress) ? concept.user_progress[0] : concept.user_progress) 
-              : undefined;
-            return progress?.is_mastered || false;
-          });
-
-          // Determine stage based on domain name/index
-          let stage = 'foundations';
-          if (domain.name?.toLowerCase().includes('application') || domain.order_index > 1) stage = 'applications';
-          if (domain.name?.toLowerCase().includes('advanced') || domain.order_index > 2) stage = 'advanced';
-          
-          return {
-            name: domain.name || `Domain ${domain.order_index}`,
-            completed: domainCompleted.length,
-            total: domainConcepts.length,
-            stage
-          };
-        });
-
-        setProgressData({
-          conceptsCompleted: completedConcepts.length,
-          totalConcepts: allConcepts.length,
-          overallProgress,
-          domainProgress
-        });
-
-        console.log('📊 Progress data calculated:', {
-          conceptsCompleted: completedConcepts.length,
-          totalConcepts: allConcepts.length,
-          overallProgress,
-          domainProgress
-        });
-      }
-    } catch (error) {
-      console.error('❌ Error fetching progress data:', error);
-    }
-  }, [user]);
 
   // Fetch user data
   useEffect(() => {
     async function fetchUserData() {
       if (user) {
-        setIsLoadingDashboard(true);
-        
         const { getSubscriptionStatus } = await import('../../lib/getSubscriptionStatus');
         const { getUserCertificationGoal } = await import('../../lib/getUserCertificationGoal');
-        const { getUserPrimaryLearningPath } = await import('../../lib/learningPathBridge');
         
-        const [status, certificationGoal, learningPath] = await Promise.all([
+        const [status, certificationGoal] = await Promise.all([
           getSubscriptionStatus(user.id),
-          getUserCertificationGoal(user.id),
-          getUserPrimaryLearningPath(user.id)
+          getUserCertificationGoal(user.id)
         ]);
         
-        console.log('📋 Fetched user data:', { status, certificationGoal, learningPath });
         setSubscriptionStatus(status);
         setUserCertificationGoal(certificationGoal);
-        setStructuredLearningPath(learningPath);
-        
-        // Get certification ID for study path link
-        if (certificationGoal) {
-          const certId = await getCertificationId(certificationGoal);
-          setCertificationId(certId);
-        }
-        
-        // Fetch progress data if user has structured path
-        await fetchProgressData(learningPath);
-        
-        setIsLoadingDashboard(false);
       }
     }
-
+    
     if (user) {
       fetchUserData();
     }
-  }, [user, fetchProgressData]);
+  }, [user]);
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
-    console.log('🚪 Starting sign out from dashboard...');
-    
     try {
       await signOut();
-      console.log('✅ Sign out completed, redirecting to home');
       router.push('/');
     } catch (error) {
-      console.error('❌ Sign out error:', error);
-    } finally {
+      console.error('Sign out error:', error);
       setIsSigningOut(false);
-    }
-  };
-
-  const handleCertificationGoalUpdated = async (newGoal: string) => {
-    setUserCertificationGoal(newGoal);
-    // Get certification ID for the new goal
-    const certId = await getCertificationId(newGoal);
-    setCertificationId(certId);
-    // Refresh the structured learning path after goal update
-    if (user) {
-      fetchUserLearningPath();
-    }
-  };
-
-  const fetchUserLearningPath = async () => {
-    if (!user) return;
-    
-    try {
-      console.log('🔍 Dashboard: Fetching learning path for user:', user.id);
-      const { getUserPrimaryLearningPath } = await import('../../lib/learningPathBridge');
-      const learningPath = await getUserPrimaryLearningPath(user.id);
-      console.log('🔍 Dashboard: Learning path result:', learningPath);
-      setStructuredLearningPath(learningPath);
-      
-      // Also refresh progress data
-      await fetchProgressData(learningPath);
-    } catch (error) {
-      console.error('Error fetching learning path:', error);
     }
   };
 
@@ -248,55 +116,27 @@ export default function DashboardPage() {
           <div className="hidden md:flex items-center space-x-8">
             <Link href="/" className="text-green-700 hover:text-green-900 transition-colors font-medium">Home</Link>
             <Link href="/pricing" className="text-green-700 hover:text-green-900 transition-colors font-medium">Pricing</Link>
-            <Link href="/settings" className="text-green-700 hover:text-green-900 transition-colors font-medium">Settings</Link>
-            <Link href="/about" className="text-green-700 hover:text-green-900 transition-colors font-medium">About</Link>
-            <Link href="/contact" className="text-green-700 hover:text-green-900 transition-colors font-medium">Contact</Link>
-            {(user?.email === 'admin@certbloom.com' || user?.email?.includes('@luminanova.com')) && (
-              <Link href="/admin" className="text-purple-700 hover:text-purple-900 transition-colors font-medium">Admin</Link>
-            )}
-            <span className="text-green-600 font-medium text-sm">Welcome, {user.user_metadata?.full_name || user.email?.split('@')[0] || 'Learner'}!</span>
-            <button
+            <button 
               onClick={handleSignOut}
               disabled={isSigningOut}
-              className="px-6 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50"
+              className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium disabled:opacity-50"
             >
-              {isSigningOut ? 'Signing Out...' : 'Sign Out'}
+              {isSigningOut ? 'Signing out...' : 'Sign Out'}
             </button>
           </div>
         </div>
       </nav>
 
       {/* Main Content */}
-      <div className="relative z-10 container mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto p-6">
         {/* Success Message */}
         {showSuccessMessage && (
-          <div className="fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-pulse">
-            🎉 Upgrade successful! Welcome to CertBloom Pro!
-          </div>
-        )}
-
-        {/* Gentle Certification Selection Prompt */}
-        {!userCertificationGoal && !isLoadingDashboard && (
-          <div className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6 shadow-lg">
-            <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
-                  <span className="text-2xl">🌟</span>
-                </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-semibold text-amber-900 mb-2">
-                  Welcome to your learning journey!
-                </h3>
-                <p className="text-amber-800 mb-4">
-                  To get started with personalized study plans and track your progress, please select your Texas teacher certification program below.
-                </p>
-                <button 
-                  onClick={() => setShowCertificationSelector(true)}
-                  className="inline-flex items-center px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors"
-                >
-                  Choose Your Certification Program →
-                </button>
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-4">
+            <div className="flex items-center space-x-3">
+              <span className="text-2xl">✅</span>
+              <div>
+                <h3 className="text-green-800 font-semibold">Certification Goal Set!</h3>
+                <p className="text-green-600 text-sm">Your learning path is now personalized for your certification.</p>
               </div>
             </div>
           </div>
@@ -335,12 +175,7 @@ export default function DashboardPage() {
             {userCertificationGoal ? (
               <div className="space-y-2">
                 <p className="text-blue-600 text-sm font-medium">{getCertificationDisplayName(userCertificationGoal)}</p>
-                <Link 
-                  href={certificationId ? `/study-path?certId=${certificationId}` : '/study-path'}
-                  className="inline-flex items-center px-3 py-2 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition-colors shadow-sm"
-                >
-                  Start Learning Path →
-                </Link>
+                <p className="text-gray-600 text-xs">Ready for Enhanced Learning Experience!</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -348,9 +183,9 @@ export default function DashboardPage() {
                 <p className="text-gray-600 text-xs">Choose your certification program to unlock personalized learning</p>
                 <button 
                   onClick={() => setShowCertificationSelector(true)}
-                  className="w-full px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs font-medium rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 transform hover:scale-105 shadow-sm"
+                  className="w-full px-3 py-2 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
                 >
-                  Select Your Program →
+                  Set Certification Goal
                 </button>
               </div>
             )}
@@ -358,133 +193,99 @@ export default function DashboardPage() {
 
           {/* Concepts Mastered */}
           <div className="bg-gradient-to-br from-green-100 to-green-50 rounded-2xl p-6 border border-green-200/60 shadow-lg">
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-3xl">🌱</div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-green-700">
-                  {isLoadingDashboard ? '...' : progressData?.conceptsCompleted ?? 0}
-                </div>
-                <div className="text-sm text-green-600">of {progressData?.totalConcepts ?? 9} concepts</div>
-              </div>
-            </div>
-            <h3 className="text-lg font-semibold text-green-800 mb-2">Concepts Mastered</h3>
-            <p className="text-green-600 text-sm">Your knowledge is growing!</p>
+            <div className="text-3xl mb-4">🌱</div>
+            <h3 className="text-lg font-semibold text-green-800 mb-1">Enhanced Learning</h3>
+            <div className="text-2xl font-bold text-green-700 mb-1">Ready!</div>
+            <p className="text-green-600 text-sm">Interactive learning modules await</p>
           </div>
 
           {/* Learning Progress */}
           <div className="bg-gradient-to-br from-purple-100 to-purple-50 rounded-2xl p-6 border border-purple-200/60 shadow-lg">
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-3xl">📈</div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-purple-700">
-                  {isLoadingDashboard ? '...' : `${progressData?.overallProgress ?? 0}%`}
+            <div className="text-3xl mb-4">📈</div>
+            <h3 className="text-lg font-semibold text-purple-800 mb-1">Learning Progress</h3>
+            <div className="text-2xl font-bold text-purple-700 mb-1">Begin Journey</div>
+            <p className="text-purple-600 text-sm">Start with Enhanced Learning</p>
+          </div>
+        </div>
+
+        {/* Enhanced Learning Experience Showcase */}
+        <div className="mb-8">
+          <div className="bg-gradient-to-r from-purple-50 via-pink-50 to-blue-50 border border-purple-200 rounded-2xl p-8 shadow-xl">
+            <div className="flex items-start space-x-6">
+              <div className="flex-shrink-0">
+                <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <span className="text-3xl">✨</span>
                 </div>
-                <div className="text-sm text-purple-600">Overall Progress</div>
               </div>
-            </div>
-            <h3 className="text-lg font-semibold text-green-800 mb-2">Learning Progress</h3>
-            <div className="w-full bg-purple-200 rounded-full h-2">
-              <div 
-                className="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full transition-all duration-500"
-                style={{ width: `${progressData?.overallProgress ?? 0}%` }}
-              ></div>
+              <div className="flex-1 min-w-0">
+                <div className="inline-flex items-center px-3 py-1 bg-purple-100 rounded-full text-xs font-medium text-purple-700 mb-3">
+                  🆕 NEW: Enhanced Learning Experience
+                </div>
+                <h2 className="text-2xl font-bold text-purple-900 mb-3">
+                  Teacher Preparation Excellence Framework
+                </h2>
+                <p className="text-purple-800 mb-6 text-lg leading-relaxed">
+                  Experience our revolutionary approach to teacher certification preparation! Interactive learning 
+                  modules, classroom scenarios, teaching strategies, and misconception alerts designed specifically for 
+                  educator success.
+                </p>
+
+                <div className="grid grid-cols-3 gap-6 mb-6">
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-purple-600">📚</div>
+                    <div className="text-xs text-purple-600">5 Learning Modules</div>
+                    <div className="text-xs text-gray-600">Comprehensive content</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-pink-600">🏫</div>
+                    <div className="text-xs text-pink-600">Real Scenarios</div>
+                    <div className="text-xs text-gray-600">Classroom applications</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-orange-600">⚠️</div>
+                    <div className="text-xs text-orange-600">Misconception Alerts</div>
+                    <div className="text-xs text-gray-600">Common student errors</div>
+                  </div>
+                </div>
+
+                <div className="bg-white/50 rounded-lg p-4 mb-6">
+                  <div className="text-xs text-purple-700 font-medium mb-2">📊 Live from our enhanced database:</div>
+                  <div className="grid grid-cols-4 gap-4 text-center text-xs">
+                    <div>
+                      <div className="text-lg font-bold text-purple-700">5</div>
+                      <div className="text-xs text-purple-600">Modules</div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-bold text-blue-700">1</div>
+                      <div className="text-xs text-blue-600">Practice Test</div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-bold text-green-700">3</div>
+                      <div className="text-xs text-green-600">Questions</div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-bold text-orange-700">20</div>
+                      <div className="text-xs text-orange-600">Answer Choices</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-start">
+                  <Link 
+                    href="/enhanced-learning"
+                    className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                  >
+                    🚀 Experience Enhanced Learning
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Structured Learning Path Invitation */}
-        {structuredLearningPath.hasStructuredPath && (
-          <div className="mb-8">
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-2xl p-6 shadow-lg">
-              <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-2xl">🌸</span>
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-semibold text-blue-900 mb-2">
-                    ✨ Your Learning Path is Ready
-                  </h3>
-                  <p className="text-blue-800 mb-4">
-                    Your <strong>{structuredLearningPath.certificationName || userCertificationGoal || 'certification'}</strong> path 
-                    features concept-based learning with organized domains, mastery tracking, and personalized recommendations.
-                  </p>
-                  <div className="flex space-x-3">
-                    <Link 
-                      href={structuredLearningPath.certificationId 
-                        ? `/study-path?certId=${structuredLearningPath.certificationId}`
-                        : "/study-path"
-                      }
-                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Begin Learning →
-                    </Link>
-                    {subscriptionStatus === 'free' && (
-                      <Link 
-                        href="/pricing"
-                        className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white text-sm font-medium rounded-lg hover:from-purple-600 hover:to-purple-700 transition-colors"
-                      >
-                        Unlock Pro Features
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Concept-Based Learning Options */}
+        {/* Quick Actions */}
         <div className="grid lg:grid-cols-2 gap-8 mb-12">
-          
-          {/* Always show unified concept-based learning invitation */}
-          {!structuredLearningPath.hasStructuredPath && (
-            <div className="lg:col-span-2 bg-gradient-to-br from-green-100 to-blue-50 rounded-2xl p-8 border border-green-200/60 shadow-lg">
-              <div className="flex items-start gap-4 mb-6">
-                <div className="text-4xl">🎯</div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold text-green-800 mb-2">Concept-Based Learning</h3>
-                  <p className="text-green-600 text-sm mb-4">
-                    Master concepts step-by-step with personalized learning paths, progress tracking, and adaptive recommendations.
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="text-center p-4 bg-blue-50 rounded-xl border border-blue-200">
-                  <div className="text-2xl mb-2">📖</div>
-                  <div className="text-sm font-medium text-blue-700">Learn</div>
-                  <div className="text-xs text-blue-600">Explanations</div>
-                </div>
-                <div className="text-center p-4 bg-purple-50 rounded-xl border border-purple-200">
-                  <div className="text-2xl mb-2">🔧</div>
-                  <div className="text-sm font-medium text-purple-700">Practice</div>
-                  <div className="text-xs text-purple-600">Interactive</div>
-                </div>
-                <div className="text-center p-4 bg-green-50 rounded-xl border border-green-200">
-                  <div className="text-2xl mb-2">✅</div>
-                  <div className="text-sm font-medium text-green-700">Master</div>
-                  <div className="text-xs text-green-600">Track Progress</div>
-                </div>
-              </div>
-
-              <div className="text-center">
-                <p className="text-green-700 text-sm mb-4">
-                  Ready to begin your learning journey? Select your certification program to get started with personalized concept mastery.
-                </p>
-                <button 
-                  onClick={() => setShowCertificationSelector(true)}
-                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-xl hover:from-green-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium"
-                >
-                  Choose Your Certification Program →
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Quick Actions */}
-          <div className={`space-y-6 ${!structuredLearningPath.hasStructuredPath ? '' : 'lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6'}`}>
+          <div className="space-y-6">
             {/* Mindful Learning */}
             <div className="bg-gradient-to-br from-purple-100 to-pink-50 rounded-2xl p-6 border border-purple-200/60 shadow-lg">
               <div className="text-3xl mb-3">🌸</div>
@@ -500,202 +301,110 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            {/* Progress Review */}
-            <div className="bg-gradient-to-br from-orange-100 to-yellow-50 rounded-2xl p-6 border border-orange-200/60 shadow-lg">
-              <div className="text-3xl mb-3">📊</div>
-              <h4 className="text-lg font-semibold text-orange-800 mb-2">Progress Review</h4>
-              <p className="text-orange-600 text-sm mb-3">
-                See your concept mastery and learning insights.
+            {/* Enhanced Learning Quick Start */}
+            <div className="bg-gradient-to-br from-blue-100 to-indigo-50 rounded-2xl p-6 border border-blue-200/60 shadow-lg">
+              <div className="text-3xl mb-3">🚀</div>
+              <h4 className="text-lg font-semibold text-blue-800 mb-2">Quick Start Guide</h4>
+              <p className="text-blue-600 text-sm mb-3">
+                Jump into Enhanced Learning with guided modules.
               </p>
-              <div className="text-xs text-orange-700 mb-4">
-                <strong>Track:</strong> Concept mastery, time spent, and personalized recommendations.
+              <div className="text-xs text-blue-700 mb-4">
+                <strong>Features:</strong> Interactive content, teaching scenarios, and misconception awareness.
               </div>
               <Link 
-                href="/analytics"
-                className="block w-full py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-xl hover:from-orange-600 hover:to-yellow-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 text-center"
+                href="/enhanced-learning"
+                className="block w-full py-3 text-center bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
-                View Analytics
+                Start Enhanced Learning
               </Link>
             </div>
           </div>
-        </div>
 
-        {/* Concept Mastery Journey */}
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 border border-green-200/60 shadow-xl mb-12">
-          <h3 className="text-2xl font-semibold text-green-800 mb-6 text-center">Your Concept Mastery Journey</h3>
-          
-          {progressData && progressData.domainProgress.length > 0 ? (
-            // Show real progress data
-            <div className="flex items-center justify-between max-w-4xl mx-auto">
-              {progressData.domainProgress.slice(0, 4).map((domain, index) => {
-                const progressPercent = domain.total > 0 ? (domain.completed / domain.total) * 100 : 0;
-                const isActive = domain.completed > 0;
-                const isCompleted = progressPercent >= 80;
-                
-                // Determine colors and icon based on stage
-                let bgColor = 'bg-gray-300';
-                let textColor = 'text-gray-600';
-                const ringColor = 'text-gray-500';
-                let icon = '📖';
-                
-                if (index === 0) { // Foundations
-                  bgColor = isCompleted ? 'bg-green-500' : isActive ? 'bg-green-400' : 'bg-green-300';
-                  textColor = isCompleted ? 'text-green-700' : 'text-green-600';
-                  icon = '📖';
-                } else if (index === 1) { // Applications
-                  bgColor = isCompleted ? 'bg-blue-500' : isActive ? 'bg-blue-400' : 'bg-blue-300';
-                  textColor = isCompleted ? 'text-blue-700' : 'text-blue-600';
-                  icon = '🔧';
-                } else if (index === 2) { // Advanced
-                  bgColor = isCompleted ? 'bg-purple-500' : isActive ? 'bg-purple-400' : 'bg-purple-300';
-                  textColor = isCompleted ? 'text-purple-700' : 'text-purple-600';
-                  icon = '🎯';
-                } else { // Mastery
-                  bgColor = isCompleted ? 'bg-yellow-500' : isActive ? 'bg-yellow-400' : 'bg-yellow-300';
-                  textColor = isCompleted ? 'text-yellow-700' : 'text-yellow-600';
-                  icon = '🏆';
-                }
-
-                return (
-                  <div key={`${domain.name}-${index}`} className="flex flex-col items-center text-center">
-                    <div className={`w-16 h-16 ${bgColor} rounded-full flex items-center justify-center text-white text-2xl mb-3 shadow-lg transition-all duration-300 ${isActive ? 'scale-110' : ''}`}>
-                      {icon}
-                    </div>
-                    <div className={`text-sm font-medium ${textColor}`}>
-                      {index === 0 ? 'Foundations' : index === 1 ? 'Applications' : index === 2 ? 'Advanced' : 'Mastery'}
-                    </div>
-                    <div className={`text-xs ${ringColor}`}>
-                      {domain.completed} of {domain.total} concepts
-                    </div>
-                    {progressPercent > 0 && (
-                      <div className="text-xs font-semibold text-green-600 mt-1">
-                        {Math.round(progressPercent)}%
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            // Fallback to static data if no progress available
-            <div className="flex items-center justify-between max-w-4xl mx-auto">
-              <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center text-white text-2xl mb-3 shadow-lg">
-                  📖
-                </div>
-                <div className="text-sm font-medium text-green-700">Foundations</div>
-                <div className="text-xs text-green-600">3 concepts</div>
-              </div>
-              
-              <div className="flex-1 h-2 bg-green-200 mx-4 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-green-500 to-blue-400 w-1/4 rounded-full"></div>
-              </div>
-              
-              <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 bg-blue-400 rounded-full flex items-center justify-center text-white text-2xl mb-3 shadow-lg">
-                  🔧
-                </div>
-                <div className="text-sm font-medium text-blue-700">Applications</div>
-                <div className="text-xs text-blue-600">3 concepts</div>
-              </div>
-              
-              <div className="flex-1 h-2 bg-gray-200 mx-4 rounded-full">
-                <div className="h-full bg-gray-300 w-0 rounded-full"></div>
-              </div>
-              
-              <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 text-2xl mb-3">
-                  🎯
-                </div>
-                <div className="text-sm font-medium text-gray-600">Advanced</div>
-                <div className="text-xs text-gray-500">3 concepts</div>
-              </div>
-              
-              <div className="flex-1 h-2 bg-gray-200 mx-4 rounded-full"></div>
-              
-              <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 text-2xl mb-3">
-                  🏆
-                </div>
-                <div className="text-sm font-medium text-gray-600">Mastery</div>
-                <div className="text-xs text-gray-500">Certification Ready</div>
-              </div>
-            </div>
-          )}
-
-          {subscriptionStatus === 'free' && (
-            <div className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200 text-center">
-              <p className="text-sm text-purple-700 mb-2">
-                🌟 <strong>Free tier:</strong> Access to Foundation concepts only
+          <div className="space-y-6">
+            {/* Study Resources */}
+            <div className="bg-gradient-to-br from-green-100 to-emerald-50 rounded-2xl p-6 border border-green-200/60 shadow-lg">
+              <div className="text-3xl mb-3">📚</div>
+              <h4 className="text-lg font-semibold text-green-800 mb-2">Study Resources</h4>
+              <p className="text-green-600 text-sm mb-4">
+                Access comprehensive learning materials and practice tests.
               </p>
-              <Link 
-                href="/pricing"
-                className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white text-sm font-medium rounded-lg hover:from-purple-600 hover:to-purple-700 transition-colors"
-              >
-                Unlock All Concepts →
-              </Link>
+              <div className="space-y-2">
+                <Link 
+                  href="/enhanced-learning"
+                  className="block w-full py-2 text-center bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-200 text-sm"
+                >
+                  Enhanced Modules
+                </Link>
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* Mindful Reflection */}
-        <div className="bg-gradient-to-r from-green-100 via-orange-50 to-yellow-100 rounded-2xl p-8 border border-green-200/60 shadow-lg text-center">
-          <div className="text-4xl mb-4">🌱</div>
-          <h3 className="text-2xl font-semibold text-green-800 mb-4">This Week&apos;s Reflection</h3>
-          <p className="text-green-600 text-lg max-w-2xl mx-auto">
-            &quot;Growth is not about perfection, but about progress. Every concept mastered, every insight gained, 
-            and every moment of mindfulness brings you closer to your teaching dreams.&quot;
-          </p>
+            {/* Support */}
+            <div className="bg-gradient-to-br from-orange-100 to-yellow-50 rounded-2xl p-6 border border-orange-200/60 shadow-lg">
+              <div className="text-3xl mb-3">💡</div>
+              <h4 className="text-lg font-semibold text-orange-800 mb-2">Need Help?</h4>
+              <p className="text-orange-600 text-sm mb-4">
+                Get support and tips for effective learning.
+              </p>
+              <div className="text-xs text-orange-700 mb-4">
+                <strong>Available:</strong> Learning guides, FAQs, and study tips.
+              </div>
+              <button className="w-full py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-xl hover:from-orange-600 hover:to-yellow-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
+                Get Support
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Breathing Exercise Modal */}
-      {showBreathing && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
-            <div className="text-center">
-              <div className="text-6xl mb-6 animate-pulse">🌸</div>
-              <h3 className="text-2xl font-semibold text-green-800 mb-4">Mindful Breathing</h3>
-              <p className="text-green-600 mb-6">
-                Let&apos;s take a moment to breathe and center ourselves.
-              </p>
-              
-              <div className="text-4xl font-bold text-blue-600 mb-6">{breathingCount}/6</div>
-              
-              <div className="space-y-4">
-                <button
-                  onClick={() => setBreathingCount(prev => Math.min(prev + 1, 6))}
-                  className="w-full py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors"
-                >
-                  Breathe In... Hold... Breathe Out
-                </button>
-                
-                {breathingCount >= 6 && (
-                  <div className="text-green-600 font-medium">Perfect! You&apos;re centered and ready to learn.</div>
-                )}
-                
-                <button
-                  onClick={() => {
-                    setShowBreathing(false);
-                    setBreathingCount(0);
-                  }}
-                  className="w-full py-2 text-green-600 hover:text-green-700 transition-colors"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
+      {/* Certification Goal Selector Modal */}
+      {showCertificationSelector && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-6 m-4 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <CertificationGoalSelector 
+              isOpen={true}
+              currentGoal={userCertificationGoal}
+              onGoalUpdated={handleCertificationGoalUpdate}
+              onClose={() => setShowCertificationSelector(false)}
+            />
           </div>
         </div>
       )}
 
-      {/* Certification Goal Selector Modal */}
-      <CertificationGoalSelector
-        isOpen={showCertificationSelector}
-        onClose={() => setShowCertificationSelector(false)}
-        currentGoal={userCertificationGoal}
-        onGoalUpdated={handleCertificationGoalUpdated}
-      />
+      {/* Breathing Exercise Modal */}
+      {showBreathing && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-8 m-4 max-w-md w-full text-center">
+            <div className="text-6xl mb-4">🌸</div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">3-Minute Mindful Reset</h3>
+            <div className="text-4xl font-bold text-purple-600 mb-4">{breathingCount}/3</div>
+            <p className="text-gray-600 mb-6">Breathe deeply and center yourself for focused learning.</p>
+            <div className="space-y-3">
+              <button 
+                onClick={() => {
+                  if (breathingCount < 3) {
+                    setBreathingCount(breathingCount + 1);
+                  } else {
+                    setShowBreathing(false);
+                    setBreathingCount(0);
+                  }
+                }}
+                className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transition-colors"
+              >
+                {breathingCount < 3 ? 'Breathe In... Breathe Out...' : 'Complete ✨'}
+              </button>
+              <button 
+                onClick={() => {
+                  setShowBreathing(false);
+                  setBreathingCount(0);
+                }}
+                className="w-full py-2 text-gray-500 hover:text-gray-700 transition-colors text-sm"
+              >
+                Skip for now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
