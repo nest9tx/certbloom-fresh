@@ -104,27 +104,57 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     try {
       console.log('🔄 Updating user profile in database...');
-      const updateData: Record<string, string | boolean> = {
+      
+      // First, try updating with all fields
+      let updateData: Record<string, string | boolean> = {
         subscription_status: 'active',
         stripe_customer_id: stripeCustomerId,
-        stripe_subscription_id: stripeSubscriptionId,
       };
       
-      if (subscriptionPlan) updateData.subscription_plan = subscriptionPlan;
-      if (subscriptionEndDate) updateData.subscription_end_date = subscriptionEndDate;
+      // Try to add subscription details if columns exist
+      if (stripeSubscriptionId) {
+        updateData.stripe_subscription_id = stripeSubscriptionId;
+      }
+      if (subscriptionPlan) {
+        updateData.subscription_plan = subscriptionPlan;
+      }
+      if (subscriptionEndDate) {
+        updateData.subscription_end_date = subscriptionEndDate;
+      }
       
       const { error } = await supabaseAdmin
-        .from('user_profiles') // Make sure this matches your table name
+        .from('user_profiles')
         .update(updateData)
-        .eq('id', userId); // Use the user's ID to find the correct profile
+        .eq('id', userId);
 
-      if (error) {
+      // If error due to missing columns, try with just essential fields
+      if (error && error.code === '42703') {
+        console.log('🔄 Column missing, trying minimal update...');
+        updateData = {
+          subscription_status: 'active',
+          stripe_customer_id: stripeCustomerId,
+        };
+        
+        const { error: minimalError } = await supabaseAdmin
+          .from('user_profiles')
+          .update(updateData)
+          .eq('id', userId);
+          
+        if (minimalError) {
+          console.error(`❌ Minimal Supabase update error for user ${userId}:`, minimalError);
+          res.status(500).send(`Webhook Error: ${minimalError.message}`);
+          return;
+        }
+        
+        console.log(`✅ Successfully updated subscription status (minimal) for user: ${userId}`);
+        console.log(`⚠️  Note: Additional columns (stripe_subscription_id, subscription_plan, subscription_end_date) need to be added to user_profiles table`);
+      } else if (error) {
         console.error(`❌ Supabase update error for user ${userId}:`, error);
         res.status(500).send(`Webhook Error: ${error.message}`);
         return;
+      } else {
+        console.log(`✅ Successfully updated full subscription data for user: ${userId}`);
       }
-
-      console.log(`✅ Successfully updated subscription for user: ${userId}`);
     } catch (dbError) {
       console.error('❌ Webhook handler database error:', dbError);
       res.status(500).send('Webhook handler database error');
