@@ -3,72 +3,40 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../../../lib/auth-context'
 import LearningModuleRenderer from '../../components/LearningModuleRenderer'
+import ConceptBrowser from '../../components/ConceptBrowser'
 import Link from 'next/link'
 
 export default function EnhancedLearningPage() {
   const { user, loading } = useAuth()
-  const [userCertificationGoal, setUserCertificationGoal] = useState<string | null>(null)
   const [conceptId, setConceptId] = useState<string | null>(null)
-  const [loadingUserData, setLoadingUserData] = useState(true)
-
-  // Get certification name for display
-  const getCertificationDisplayName = (goal: string) => {
-    const certMap: Record<string, string> = {
-      '902': 'TExES Core Subjects EC-6: Mathematics (902)',
-      '391': 'TExES Core Subjects EC-6 (391)',
-      '901': 'TExES Core Subjects EC-6: English Language Arts (901)',
-      '903': 'TExES Core Subjects EC-6: Social Studies (903)',
-      '904': 'TExES Core Subjects EC-6: Science (904)'
-    };
-    return certMap[goal] || goal;
-  };
+  const [userCertificationGoal, setUserCertificationGoal] = useState<string | null>(null)
 
   // Fetch user's certification goal
   useEffect(() => {
-    // Map certification goals to concept IDs
-    const certificationToConceptMap: Record<string, string> = {
-      '902': 'c1111111-1111-1111-1111-111111111111', // Place Value concept for Math 902
-      '391': 'c1111111-1111-1111-1111-111111111111', // Default to Place Value for now
-      '901': 'c1111111-1111-1111-1111-111111111111', // Default to Place Value for now
-      '903': 'c1111111-1111-1111-1111-111111111111', // Default to Place Value for now
-      '904': 'c1111111-1111-1111-1111-111111111111', // Default to Place Value for now
-    }
-
-    async function fetchUserCertificationGoal() {
+    async function fetchCertificationGoal() {
       if (user) {
         try {
           const { getUserCertificationGoal } = await import('../../lib/getUserCertificationGoal')
           const goal = await getUserCertificationGoal(user.id)
           setUserCertificationGoal(goal)
-          
-          // Set the concept ID based on certification goal
-          if (goal && certificationToConceptMap[goal]) {
-            setConceptId(certificationToConceptMap[goal])
-          } else {
-            // Default to Place Value concept if no specific mapping
-            setConceptId('c1111111-1111-1111-1111-111111111111')
-          }
         } catch (error) {
           console.error('Error fetching certification goal:', error)
-          // Default to Place Value concept on error
-          setConceptId('c1111111-1111-1111-1111-111111111111')
-        } finally {
-          setLoadingUserData(false)
+          setUserCertificationGoal('902') // Default to 902
         }
-      } else {
-        setLoadingUserData(false)
       }
     }
-
-    fetchUserCertificationGoal()
+    
+    if (user) {
+      fetchCertificationGoal()
+    }
   }, [user])
 
-  if (loading || loadingUserData) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading enhanced learning experience...</p>
+          <p className="text-gray-600">Loading Enhanced Learning Experience...</p>
         </div>
       </div>
     )
@@ -76,13 +44,15 @@ export default function EnhancedLearningPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-6xl mb-4">🔒</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Sign In Required</h1>
-          <p className="text-gray-600 mb-6">Please sign in to access the enhanced learning experience with comprehensive teacher preparation modules.</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-6">
+          <div className="text-6xl mb-4">🔐</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Authentication Required</h2>
+          <p className="text-gray-600 mb-6">
+            Please sign in to access the Enhanced Learning Experience.
+          </p>
           <Link 
-            href="/auth" 
+            href="/login" 
             className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
           >
             Sign In
@@ -93,30 +63,32 @@ export default function EnhancedLearningPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200">
-        <div className="max-w-7xl mx-auto flex items-center justify-between p-6">
-          <Link href="/dashboard" className="flex items-center space-x-3 group">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-              <span className="text-white font-bold text-lg">CB</span>
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              CertBloom
-            </span>
-          </Link>
-          
-          <div className="flex items-center space-x-4">
-            <Link 
-              href="/dashboard" 
-              className="text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              Dashboard
-            </Link>
-            <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-medium text-sm">
-                {user.email?.[0]?.toUpperCase()}
+      <nav className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <Link href="/" className="flex items-center space-x-3 group">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                <span className="text-white font-bold text-lg">CB</span>
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                CertBloom
               </span>
+            </Link>
+            
+            <div className="flex items-center space-x-4">
+              <Link 
+                href="/dashboard" 
+                className="text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                Dashboard
+              </Link>
+              <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-medium text-sm">
+                  {user.email?.[0]?.toUpperCase()}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -144,17 +116,9 @@ export default function EnhancedLearningPage() {
         <div className="grid md:grid-cols-3 gap-6 mb-12">
           <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-white/50 shadow-lg">
             <div className="text-3xl mb-3">📚</div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Concept Mastery</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">5 Learning Modules</h3>
             <p className="text-gray-600 text-sm">
-              Deep dive into educational concepts with structured learning progressions and clear success criteria.
-            </p>
-          </div>
-          
-          <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-white/50 shadow-lg">
-            <div className="text-3xl mb-3">👩‍🏫</div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Teaching Strategies</h3>
-            <p className="text-gray-600 text-sm">
-              Learn proven classroom techniques and teaching demonstrations from experienced educators.
+              Comprehensive content delivery through concept introduction, teaching strategies, tutorials, scenarios, and misconception alerts.
             </p>
           </div>
           
@@ -165,40 +129,40 @@ export default function EnhancedLearningPage() {
               Practice with authentic classroom challenges and learn to handle diverse learning situations.
             </p>
           </div>
+
+          <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-white/50 shadow-lg">
+            <div className="text-3xl mb-3">⚠️</div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Misconception Alerts</h3>
+            <p className="text-gray-600 text-sm">
+              Identify and address common student errors with targeted intervention strategies.
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Main Learning Module Content */}
+      {/* Main Content */}
       {conceptId ? (
-        <div className="mb-8">
-          {userCertificationGoal && (
-            <div className="max-w-7xl mx-auto px-6 mb-6">
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <div className="flex items-center space-x-3">
-                  <span className="text-2xl">🎯</span>
-                  <div>
-                    <h3 className="text-blue-800 font-semibold">Your Certification Goal</h3>
-                    <p className="text-blue-600 text-sm">{getCertificationDisplayName(userCertificationGoal)}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          <LearningModuleRenderer conceptId={conceptId} />
-        </div>
+        <LearningModuleRenderer conceptId={conceptId} />
       ) : (
-        <div className="max-w-7xl mx-auto px-6 py-12 text-center">
-          <div className="text-6xl mb-4">🎯</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Set Your Certification Goal</h2>
-          <p className="text-gray-600 mb-6">
-            Please set your certification goal in your dashboard to access personalized learning modules.
-          </p>
-          <Link 
-            href="/dashboard" 
-            className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-          >
-            Go to Dashboard
-          </Link>
+        <ConceptBrowser 
+          onConceptSelect={setConceptId}
+          selectedConceptId={conceptId}
+          certificationGoal={userCertificationGoal}
+        />
+      )}
+
+      {/* Back Button */}
+      {conceptId && (
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="text-center">
+            <button
+              onClick={() => setConceptId(null)}
+              className="inline-flex items-center space-x-2 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+            >
+              <span>←</span>
+              <span>Back to Concept Browser</span>
+            </button>
+          </div>
         </div>
       )}
 

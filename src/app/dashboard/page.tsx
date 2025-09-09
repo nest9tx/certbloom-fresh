@@ -17,6 +17,7 @@ export default function DashboardPage() {
   const [userCertificationGoal, setUserCertificationGoal] = useState<string | null>(null);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [showCertificationSelector, setShowCertificationSelector] = useState(false);
+  const [totalModules, setTotalModules] = useState(5); // Default fallback
 
   // Convert test code to full name for display
   const getCertificationDisplayName = (goal: string) => {
@@ -60,6 +61,7 @@ export default function DashboardPage() {
       if (user) {
         const { getSubscriptionStatus } = await import('../../lib/getSubscriptionStatus');
         const { getUserCertificationGoal } = await import('../../lib/getUserCertificationGoal');
+        const { createClient } = await import('@supabase/supabase-js');
         
         const [status, certificationGoal] = await Promise.all([
           getSubscriptionStatus(user.id),
@@ -68,6 +70,30 @@ export default function DashboardPage() {
         
         setSubscriptionStatus(status);
         setUserCertificationGoal(certificationGoal);
+
+        // Fetch total module count for current certification goal
+        if (certificationGoal) {
+          try {
+            const supabase = createClient(
+              process.env.NEXT_PUBLIC_SUPABASE_URL!,
+              process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+            );
+            
+            const { data, error } = await supabase
+              .from('learning_modules')
+              .select('id', { count: 'exact' })
+              .eq('concepts.domains.certifications.test_code', certificationGoal);
+            
+            if (!error && data) {
+              setTotalModules(data.length || 80); // Default to 80 for 902 Math
+            }
+          } catch {
+            console.log('Could not fetch module count, using default');
+            setTotalModules(80); // Default for 902 Math
+          }
+        } else {
+          setTotalModules(80); // Default for 902 Math
+        }
       }
     }
     
@@ -233,7 +259,7 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-3 gap-6 mb-6">
                   <div className="text-center">
                     <div className="text-lg font-bold text-purple-600">📚</div>
-                    <div className="text-xs text-purple-600">5 Learning Modules</div>
+                    <div className="text-xs text-purple-600">{totalModules} Learning Modules</div>
                     <div className="text-xs text-gray-600">Comprehensive content</div>
                   </div>
                   <div className="text-center">
